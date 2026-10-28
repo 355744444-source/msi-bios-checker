@@ -38,6 +38,7 @@
 import argparse
 import collections
 import datetime
+import glob
 import hashlib
 import io
 import json
@@ -253,8 +254,48 @@ def step_status(ctx, args):
 
 
 # ================================================================ gate
+def _has_tkinter(exe=None):
+    """本解释器（或指定 exe）能否 import tkinter。"""
+    try:
+        if exe is None:
+            import tkinter  # noqa: F401
+            return True
+        r = subprocess.run([exe, "-c", "import tkinter"], capture_output=True, timeout=60)
+        return r.returncode == 0
+    except Exception:
+        return False
+
+
+def _find_tk_python():
+    """在常见安装位置找第一个带 tkinter 的 python.exe，找不到返回 None。"""
+    pats = [
+        os.path.expanduser("~/AppData/Local/Programs/Python/Python3*/python.exe"),
+        r"C:\Python3*\python.exe",
+        r"C:\Program Files\Python3*\python.exe",
+    ]
+    for pat in pats:
+        # 倒序：3.13 排在 3.9 前面
+        for exe in sorted(glob.glob(pat), reverse=True):
+            if _has_tkinter(exe):
+                return os.path.normpath(exe)   # expanduser 会留混合斜杠，统一成反斜杠
+    return None
+
+
 def step_gate(ctx, args):
     print("===== 全量门禁（_gate_all.py）=====")
+    # 前置自检：13 个探针里有 12 个要 import 产品源码（第 316 行 import tkinter）
+    # 才能量真实几何。若解释器没带 tcl/tk，它们会在 import 阶段各抛一次
+    # ModuleNotFoundError，汇总页看起来就是"13 项全红"——极易误判成代码回归。
+    # 这里提前一次判定，把环境缺件和真回归区分开（rc=2 专指环境问题）。
+    if not _has_tkinter():
+        print("!! 当前解释器没有 tkinter，几何探针无法运行：")
+        print("   %s" % PY)
+        alt = _find_tk_python()
+        if alt:
+            print("   改用：\"%s\" %s gate" % (alt, os.path.basename(__file__)))
+        else:
+            print("   请安装带 tcl/tk 的 Python（python.org 官方安装包默认包含）")
+        return 2
     env = dict(os.environ)
     env["PYTHONPATH"] = os.path.join(ROOT, "_testenv")
     env["PYTHONIOENCODING"] = "utf-8"

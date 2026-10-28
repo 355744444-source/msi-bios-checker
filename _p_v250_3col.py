@@ -11,7 +11,8 @@ src = io.open(os.path.join(HERE, "_p_v230_render.py"), encoding="utf-8").read()
 cut = src.index("# ---------------------------------------------------------------- 1) 空状态")
 _ns = {"__name__": "_rp", "__file__": os.path.join(HERE, "_p_v230_render.py")}
 exec(compile(src[:cut], "_rp", "exec"), _ns)
-build, pump, CAT, GROUPS = _ns["build"], _ns["pump"], _ns["CAT"], _ns["GROUPS"]
+build, pump, wait_mapped, CAT, GROUPS = (
+    _ns["build"], _ns["pump"], _ns["wait_mapped"], _ns["CAT"], _ns["GROUPS"])
 
 import msi_bios_checker as m
 
@@ -141,6 +142,9 @@ print()
 print("=" * 76)
 print("三栏几何断言（1440×820）")
 print("=" * 76)
+# 映射是异步的（withdraw→deiconify 后 Windows 要几十毫秒才真正映射子控件），
+# 先等到关键容器 ismapped 再读几何，避免 ismapped 类断言随机红。见 wait_mapped 注释。
+wait_mapped(root, [app._split, app._split2, app._rf], timeout=3.0)
 body_w = app._body.winfo_width()
 content = body_w - m.S(m.BODY_PAD_X) * 2
 nav = app._lf.winfo_width()
@@ -175,6 +179,9 @@ app._apply_board(("MPG-Z790-EDGE-TI-WIFI", "MPG Z790 EDGE TI WIFI",
 pump(root, 6)
 app._fit_tv_cols()
 pump(root, 6)
+_dz = getattr(app, "_detail_zone", None)
+if _dz is not None:
+    wait_mapped(root, [_dz], timeout=3.0)      # 同上：喂完数据后才映射
 tvw = app.tv.winfo_width()
 cols = [int(app.tv.column(c, "width")) for c in ("ver", "date", "size", "note")]
 ck(sum(cols) <= tvw, "BIOS 表四列合计 %d ≤ 容器 %d（不横向溢出）" % (sum(cols), tvw))

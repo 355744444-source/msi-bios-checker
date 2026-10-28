@@ -78,6 +78,32 @@ def pump(root, n=6, pause=0.03):
         time.sleep(pause)
 
 
+def wait_mapped(root, widgets, timeout=3.0):
+    """等这些控件全部 winfo_ismapped() 为真；超时返回 False。
+
+    为什么需要：`build()` 走的是 withdraw() → deiconify()，映射是异步的；
+    而且窗口由**后台进程**创建时，系统随时可能把它压成 iconic
+    （实测 state=iconic、rooty=-32000，此时所有子控件 ismapped 全为 0）。
+    探针原来只 pump 固定次数就断言 ismapped，会随机红：
+    2026-10-28 实测同一份源码、同一解释器连跑 3 次得到 2 红 1 绿，
+    失败项恒为「分隔条未布局 / 栏3 未布局」这两条 ismapped 断言。
+    这里每轮先把窗口纠回 normal，再判条件；几何数值本身不受影响。
+    """
+    end = time.time() + timeout
+    while time.time() < end:
+        try:
+            if root.state() != "normal":
+                root.deiconify()
+                root.state("normal")
+                root.lift()
+        except Exception:
+            pass
+        pump(root, 1, 0.02)
+        if all(w.winfo_ismapped() for w in widgets):
+            return True
+    return False
+
+
 def client_rect(root):
     """窗口**客户区**在屏幕上的物理像素矩形（DPI 感知下即屏幕像素）。"""
     import ctypes.wintypes as wt

@@ -116,11 +116,80 @@ PE 版本资源                 2.5.3.0 ×2，旧版零残留
    是 God Function。拆分是纯重构、无验收判据，风险高于收益，本轮不做；
    若要拆，建议按「栏 1 / 栏 2 / 栏 3 / 底部工具条」四块切，并先给 `_build_ui`
    补一条「拆分前后控件树一致」的门禁（`winfo_children()` 递归快照比对）。
-2. **42 个 `_rel_*` 发版脚本**里，19 对相似度 ≥ 90%，`smoke` / `finalize` /
-   `frozen_verify` 各 4~5 代几乎逐行复制。每次发版都要手改一遍，是工程里
-   最大的重复面。收敛成一份参数化脚本属于重构，需单独排期。
-3. **12 个 `_backup_*.py` 快照**共 2.4 MB，与产品代码同目录。它们不参与构建，
-   但会干扰「全仓搜索」与 ruff 全量扫描（本次审计已显式排除）。
+2. ~~**42 个 `_rel_*` 发版脚本**~~ —— **2026-10-28 已解决**。原来 48 个 `_rel_*` 里，
+   19 对相似度 ≥ 90%，`smoke` / `finalize` / `frozen_verify` 各 4~5 代几乎逐行复制。
+   现收敛为一份参数化 **`_release.py`**（12 个平级子命令 `status/gate/pe/frozen/
+   smoke/verify/zip/deploy/archive/release/bump/clean`，版本号单一来源
+   `APP_VERSION`），48 个旧脚本归档到 `archive/legacy_rel/`。
+3. ~~**12 个 `_backup_*.py` 快照**~~ —— **2026-10-28 已解决**。原 14 份改前快照共
+   2.70 MB 与产品代码同目录，会干扰「全仓搜索」与 ruff 全量扫描。现移入
+   `archive/backups/`，根目录 `.py` 从 77 个降到 45 个；新增 `ruff.toml` 后
+   全仓 ruff 从 1037 条降到 0。
+
+### 六、增补（2026-10-28）：纳入 git + 门禁两处兜底
+
+本节**不改动任何产品代码** —— `msi_bios_checker.py` 的 sha256 整轮前后始终是
+`24e171d4…ec372da`（293221 字节），与 v2.5.3 冻结产物同源。
+
+#### 1）建立 git 仓库（首次提交 49 个文件，commit `7ec0339`）
+
+此前回退靠 `archive/backups/` 的整文件快照，粒度粗、每次改动都要手工留一份。
+现纳入 49 个文件：产品源码、`_release.py`、13 个门禁探针、构建输入
+（spec / version_info / catalog）、文档三件、图标与预览图。
+排除 `archive/`（278 MB）、`dist/`（14 MB）、根目录发版 zip、`*.bak` 改前快照、
+`_testenv/` 测试依赖与各类缓存，仓库仅 1.8 MB。
+
+行尾策略是这次唯一的硬骨头。本仓库**CRLF 与 LF 两个家族并存，且同在
+`.py` 扩展名下**（产品源码与 spec 是 CRLF，门禁脚本与三类文档是 LF）。
+系统级 `core.autocrlf=true` 会在检出时把 LF 家族改写成 CRLF —— 实测那会让
+`CHANGELOG.md` 从 120556 变 **122211** 字节、1655 行全变 CRLF，按字节对拍的
+校验当场失效。故 `.gitattributes` 写 **`* -text`**，彻底关闭换行转换。
+
+双向验证，不留"看起来没事"：
+
+| 方向 | 做法 | 结果 |
+|---|---|---|
+| 正向 | `git ls-files` 逐个重算 blob sha1 与 index 比对 | **49/49 字节相等** |
+| 正向 | 移走 3 个代表文件（CRLF 的源码/README + LF 的 CHANGELOG），`git checkout --` 重建 | 三个 sha256 全部 **OK** |
+| 负向 | 临时把 `.gitattributes` 换成 `* text=auto eol=crlf`，同样重建 CHANGELOG | 1655 行 CRLF、122211 字节、sha256 **FAILED** |
+| 恢复 | 改回 `* -text` 再重建 | 立刻回到 120556 字节、sha256 OK |
+
+负向那一步是关键：它证明挡住行尾改写的是这一行属性，而不是"本来就没问题"。
+
+顺带修 `README.txt` 第 40 行一处 `\r\r\n`（双重回车，会多显示一个空行）：
+56518 → 56517 字节，现为 485 行 CRLF、0 裸 LF、0 孤立 CR。
+
+#### 2）`gate` 增加解释器能力自检（rc=2 专指环境缺件）
+
+13 个探针里有 12 个要 `import msi_bios_checker`（第 316 行 `import tkinter`）
+才能量真实几何。WorkBuddy 自带的 vendor Python 3.13 **不含 tcl/tk**，用它跑
+`gate` 会得到"13 项全红"—— 每项都在 import 阶段抛 `ModuleNotFoundError`，
+汇总页和真回归长得一模一样，极易误判。
+
+现在 `step_gate` 先做一次 `_has_tkinter()` 判定：缺失时打印当前解释器路径、
+扫描常见安装位置找出带 tkinter 的那个并给出可直接粘贴的完整命令，
+**返回 rc=2**（与断言失败的 rc=1 区分开，看一眼退出码就知道该改代码还是改环境）。
+
+本轮实际补齐的运行环境：`…\AppData\Local\Programs\Python\Python313\python.exe`
+（3.13.9 + Tk 8.6 + Pillow 13.0.0 + ruff）。注意它**不是** `where python` 的第一项。
+
+#### 3）`_p_v250_3col` 的 ismapped 断言是 flaky，已修
+
+现象：同一份源码、同一解释器连跑 3 次得 **2 红 1 绿**，失败项恒为
+「两条分隔条均已布局」「栏 3 详情面板已布局」两条 `winfo_ismapped()` 断言，
+而同一批的几何数值断言（栏宽、合计、列宽）每次都通过。
+
+排查结论：不是代码问题。窗口由后台进程创建时会被系统压成 **iconic**
+（实测 `state=iconic`、`rooty=-32000`、所有子控件 `ismapped=0`，
+但 `winfo_width()` 仍返回布局后的旧值），所以"几何对、映射错"。
+源码里除 `main()` 的 `withdraw()/deiconify()` 外没有任何最小化调用，
+强制 `deiconify()+state("normal")` 后立刻恢复正常 —— 是环境侧的窗口压制。
+
+修法：公共段 `_p_v230_render.py` 新增 `wait_mapped(root, widgets, timeout=3.0)`，
+每轮先把窗口纠回 `normal` 再判条件，等到为真或超时；`_p_v250_3col.py` 在两处
+断言前调用。**几何断言一条没动**，只把"等固定 pump 次数"换成"等条件成立"。
+
+验证：单独连跑 5 次 ×15 断言全绿；`gate` 连跑两次 `TOTAL=13 BAD=0`。
 
 ---
 
