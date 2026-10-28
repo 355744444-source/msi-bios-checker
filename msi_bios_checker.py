@@ -288,6 +288,29 @@
         width 夹到 minwidth=293），已修正并写进探针注释。
      ⑦ 门禁 13 项复跑全绿。
 
+ 21. v2.5.4：`_build_ui` 拆分（**纯搬家，界面像素级不变**）——
+     ① 585 行的单体方法拆成 16 个 `_ui_*` 段方法（窗口 / 品牌条 / 标题栏 / 状态栏 /
+        工具条外壳 / 主体容器 / 栏1 目录树 / 分隔条 / 栏2 型号列表 / 栏3 BIOS 列表 /
+        详情凹槽 / 空状态 / 操作行 / 进度行 / 结果横幅 / 收尾），`_build_ui` 只剩
+        16 行调用。拆分由脚本按既有分节注释切行完成：除方法头之外一个字节没改，
+        缩进与语句次序原样保留。
+     ② 等价性不靠 review，靠冻结基线：新增第 14 项门禁 `_p_v254_uistruct.py`，
+        固定 cwd（隔离用户 cfg）/ 固定 96 DPI / 固定 1440×820，深度优先导出
+        **110 个控件 × 7 个字段**（Tk 路径名 / 类 / 管理器 / 实测几何 / 请求尺寸 /
+        grid 参数 / pack 参数 / 显示文本），与 `_fixtures/ui_tree_baseline.json`
+        逐条比对。路径名里带同父创建序号，所以"创建顺序被挪动"也会红。
+        拆分前后实测差异 0 条。
+     ③ 拆分本身引入了一个**静默 bug**，已修：`_ui_finish` 里写的是裸 `root`
+        （原 `_build_ui` 的局部变量），拆出去后抛 NameError，被紧邻的
+        `except Exception: pass` 吞掉 —— 后果是 WM_DELETE_WINDOW 协议静默失效、
+        关窗不再保存窗口尺寸与目录树展开状态。控件树与实际界面**完全看不出**
+        这个回归，故门禁补了一条运行时契约断言：该协议必须改绑到 `_on_close`。
+     ④ 这条断言的第一版写成 `bool(root.protocol(...))`，是个**恒真式** ——
+        Tk 的 WM_DELETE_WINDOW 一出生就绑着自己的 `destroy`，查询永远非空
+        （实测 `'1820131180800destroy'`）。改为"与建窗时默认处理器比对 + 处理器名
+        含 `_on_close`"，负向对照（改回裸 root）确认真的会红。
+     ⑤ 门禁 14 项全绿；ruff 全仓 0 条。
+
 技术要点：
   * 官网由 Akamai CDN 防护，普通 urllib/requests 会被 403/拦截，
     故网络层使用 curl_cffi 模拟 Chrome TLS 指纹（impersonate="chrome124"）。
@@ -317,7 +340,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
 APP_TITLE = "微星主板 BIOS 下载工具"
-APP_VERSION = "2.5.3"
+APP_VERSION = "2.5.4"
 APP_COMPANY = "江苏振远智能科技有限公司"
 
 # ---------------------------------------------------------------- 常量
@@ -2345,6 +2368,36 @@ class App:
 
     # ------------------------------------------------------------- UI 布局
     def _build_ui(self):
+        """装配窗口：本方法只保留**调用顺序**，实体在各 `_ui_*` 段方法里。
+
+        v2.5.4 之前是 585 行的单体方法。这次拆分是纯搬家 —— 每段的语句、缩进、
+        pack/grid 调用次序都与拆分前逐字一致，等价性由 `_p_v254_uistruct.py`
+        逐控件比对 `_fixtures/ui_tree_baseline.json`（类 / 布局参数 / 实测几何 /
+        文本）来保证，不靠肉眼 review。
+
+        ⚠ 下面这 16 个调用的**先后不许重排**：Tk 的 pack 按调用先后分配空间，
+        状态栏与底部工具条都 side="bottom"（先调用的更贴底），body 又是
+        expand=True 吃掉剩余高度 —— 换一下顺序，整窗布局就变了。
+        """
+        self._ui_window()
+        self._ui_brand()
+        self._ui_header()
+        self._ui_statusbar()
+        self._ui_actionbar()
+        body = self._ui_body()
+        self._ui_cat_card(body)
+        self._ui_split_bars(body)
+        self._ui_board_card(body)
+        rf = self._ui_bios_card(body)
+        self._ui_detail_zone(rf)
+        self._ui_empty_state()
+        self._ui_download_row()
+        self._ui_progress_row()
+        self._ui_toast(rf)
+        self._ui_finish()
+
+    def _ui_window(self):
+        """根窗口：标题、图标、几何恢复、最小尺寸、底色，以及充当天窗的 `_sky`。"""
         root = self.root
         root.title("%s v%s" % (APP_TITLE, APP_VERSION))
         # v2.0.0：源码运行时也带上窗口 / 任务栏图标（打包后由 exe 资源提供）
@@ -2367,6 +2420,8 @@ class App:
         self._sky = tk.Frame(root, bg=C_BG)
         self._sky.pack(fill="both", expand=True)
 
+    def _ui_brand(self):
+        """顶部 2px 品牌条。Tk 没有渐变填充，用 24 个等宽 Frame 拼出来。"""
         # ---------- 顶部品牌条（v2.3.0：满幅纯红 → 红向右渐隐）
         # 旧版是 4px 的满幅纯红横贯整个窗口 —— 和左上 logo 红块、红色主按钮三处同时
         # 抢注意力，强调色被稀释成了"装饰"。现在只留 2px 的品牌锚点并向右渐隐到窗口底，
@@ -2379,6 +2434,8 @@ class App:
             tk.Frame(self._brand, bg=_c, height=S(2)).pack(
                 side="left", fill="both", expand=True)
 
+    def _ui_header(self):
+        """标题栏：左侧红色 logo 块 + 应用名；右侧设置按钮 + 版本/公司。"""
         # ---------- 标题栏
         head = ttk.Frame(self._sky, padding=(S(20), S(16), S(20), S(8)))
         head.pack(fill="x")
@@ -2396,6 +2453,8 @@ class App:
         ttk.Label(hright, text="v%s   |   %s" % (APP_VERSION, APP_COMPANY),
                   style="Ver.TLabel").pack(side="right")
 
+    def _ui_statusbar(self):
+        """状态栏：左侧状态点 + 状态文字，右侧版本/DPI 读数。"""
         # ---------- 状态栏（先 pack，让底部空间留给状态栏，避免被 body expand 挤掉）
         tk.Frame(self._sky, bg=C_BORDER, height=S(1)).pack(fill="x", side="bottom")
         sb = ttk.Frame(self._sky, style="StatusBar.TFrame", padding=(S(20), S(8)))
@@ -2418,6 +2477,8 @@ class App:
         tk.Label(sb, textvariable=self.v_stat_right, font=FONT_MONO,
                  bg=C_STATUS_BG, fg=C_DIM).pack(side="right")
 
+    def _ui_actionbar(self):
+        """底部工具条外壳：两行 grid —— 行 0 操作（`_ui_download_row` 填），行 1 进度（`_ui_progress_row` 填）。"""
         # ---------- 跨三栏底部工具条（v2.5.0，参照本机 asus_bios_checker v2.2.0）
         # 为什么升为全宽条：
         #   ① 纵向：旧版「操作行 50 + 进度行 25 + 两段行距 35」常驻在右卡片内部，
@@ -2442,6 +2503,8 @@ class App:
         prow.grid(row=1, column=0, sticky="ew", pady=(S(10), S(0)))
         self._prow = prow
 
+    def _ui_body(self):
+        """三栏主体容器。列 0/2/4 放卡片，列 1/3 是自绘分隔条，弹性权重只给列 4。"""
         body = ttk.Frame(self._sky, padding=(S(BODY_PAD_X), S(8), S(BODY_PAD_X), S(6)))
         body.pack(fill="both", expand=True)
         # v2.3.1：列 0=左卡片 1=分隔条 2=右卡片。弹性权重给 **列 2**（右卡片）——
@@ -2449,59 +2512,14 @@ class App:
         body.columnconfigure(4, weight=1)
         body.rowconfigure(0, weight=1)
         self._body = body
+        return body
 
+    def _ui_cat_card(self, body):
+        """栏 1：主板目录树。宽度由 `_auto_fit_cat()` 显式赋值，故关闭 grid 传播。"""
         # ===== 左：主板目录树 =====
         lf = self._card(body)
         # v2.3.1：原 padx 右侧 12px 的固定空隙，改由分隔条承担（见下）
         lf.grid(row=0, column=0, sticky="nsew")
-
-        # ---------- v2.5.0 两条可拖拽分隔条（栏1|栏2、栏2|栏3）----------
-        # 为什么自绘而不是 ttk.PanedWindow：PanedWindow 的 sash 样式来自系统主题，
-        # 深色主题下是一条突兀的浅色槽，且它会把卡片收编成 pane（卡片样式、
-        # 内边距、圆角都要重做）。自绘成本极低：一个 10px 透明命中区 + 1px 细线。
-        # 细线本身有层级语义（"这里是可调的分界"），宽区保证鼠标好抓。
-        # 两条分隔条共用一套逻辑，用 _split_which 记「正在拖哪一条」。
-        self._split_which = 0
-        self._split = self._make_split(body, 1, 0)      # 栏1 | 栏2
-        self._split2 = self._make_split(body, 3, 1)     # 栏2 | 栏3
-
-        # ===== 中：主板型号列表（v2.5.0）=====
-        mf = self._card(body)
-        mf.grid(row=0, column=2, sticky="nsew")
-        mf.grid_propagate(False)
-        mf.columnconfigure(0, weight=1)
-        mf.rowconfigure(1, weight=1)
-        self._mf = mf
-        mhead = ttk.Frame(mf, style="Card.TFrame")
-        mhead.grid(row=0, column=0, sticky="ew")
-        ttk.Label(mhead, text="主板型号", style="H.TLabel").pack(side="left")
-        self.v_board_n = tk.StringVar(value="")
-        ttk.Label(mhead, textvariable=self.v_board_n, style="MonoSub.TLabel").pack(
-            side="right")
-        mwrap = tk.Frame(mf, bg=C_CARD)
-        mwrap.grid(row=1, column=0, sticky="nsew", pady=(S(10), S(0)))
-        # v2.5.0：中栏 footer —— 参照实现（asus v2.2.0）把「共 N 款 · 目录更新」
-        # 放在这里。中栏 340px 横跨显示，比塞进 250px 的导航栏标题行宽裕得多。
-        mfoot = ttk.Frame(mf, style="Card.TFrame")
-        mfoot.grid(row=2, column=0, sticky="ew", pady=(S(8), S(0)))
-        ttk.Label(mfoot, textvariable=self.v_cat,
-                  style="MonoSub.TLabel").pack(side="left")
-        ttk.Label(mfoot, textvariable=self.v_cat_upd,
-                  style="MonoDim.TLabel").pack(side="right")
-        mwrap.columnconfigure(0, weight=1)
-        mwrap.rowconfigure(0, weight=1)
-        self.board_tree = ttk.Treeview(mwrap, show="tree", selectmode="browse",
-                                       height=16, style="Mod.Treeview")
-        self.board_tree.grid(row=0, column=0, sticky="nsew")
-        _bsb = ttk.Scrollbar(mwrap, orient="vertical", command=self.board_tree.yview)
-        self.board_tree.configure(yscrollcommand=_bsb.set)
-        _bsb.grid(row=0, column=1, sticky="ns")
-        self.board_tree.bind("<<TreeviewSelect>>", self._on_board_select)
-        # 型号名超出列宽时用悬停提示补全（栏2 不按 max 定宽的理由见常量区注释）
-        self.board_tree.bind("<Motion>", self._on_board_motion)
-        self.board_tree.bind("<Leave>", self._on_board_leave)
-        self._hover_board = None
-        self._tip = None
         # v2.1.1：左栏宽度由 _auto_fit_cat() 显式设定 = 目录树 #0 列宽 + CAT_CARD_OVER。
         # 必须关闭 grid 传播（默认开启时 -width 会被忽略；顺带一提原 pack_propagate
         # 对 grid 子控件无效，所以旧写法 lf.configure(width=356) 一直是空操作）。
@@ -2596,6 +2614,60 @@ class App:
         # v2.5.0：v_cat_upd 的**显示位置**挪到栏 2 的 footer（见 mfoot）；
         # 变量本身已提前到状态初始化处定义。
 
+    def _ui_split_bars(self, body):
+        """两条可拖拽分隔条（栏1|栏2、栏2|栏3），由 `_split_which` 区分在拖哪条。"""
+        # ---------- v2.5.0 两条可拖拽分隔条（栏1|栏2、栏2|栏3）----------
+        # 为什么自绘而不是 ttk.PanedWindow：PanedWindow 的 sash 样式来自系统主题，
+        # 深色主题下是一条突兀的浅色槽，且它会把卡片收编成 pane（卡片样式、
+        # 内边距、圆角都要重做）。自绘成本极低：一个 10px 透明命中区 + 1px 细线。
+        # 细线本身有层级语义（"这里是可调的分界"），宽区保证鼠标好抓。
+        # 两条分隔条共用一套逻辑，用 _split_which 记「正在拖哪一条」。
+        self._split_which = 0
+        self._split = self._make_split(body, 1, 0)      # 栏1 | 栏2
+        self._split2 = self._make_split(body, 3, 1)     # 栏2 | 栏3
+
+    def _ui_board_card(self, body):
+        """栏 2：主板型号列表 + footer 计数（`v_cat` / `v_cat_upd` 都显示在这里）。"""
+        # ===== 中：主板型号列表（v2.5.0）=====
+        mf = self._card(body)
+        mf.grid(row=0, column=2, sticky="nsew")
+        mf.grid_propagate(False)
+        mf.columnconfigure(0, weight=1)
+        mf.rowconfigure(1, weight=1)
+        self._mf = mf
+        mhead = ttk.Frame(mf, style="Card.TFrame")
+        mhead.grid(row=0, column=0, sticky="ew")
+        ttk.Label(mhead, text="主板型号", style="H.TLabel").pack(side="left")
+        self.v_board_n = tk.StringVar(value="")
+        ttk.Label(mhead, textvariable=self.v_board_n, style="MonoSub.TLabel").pack(
+            side="right")
+        mwrap = tk.Frame(mf, bg=C_CARD)
+        mwrap.grid(row=1, column=0, sticky="nsew", pady=(S(10), S(0)))
+        # v2.5.0：中栏 footer —— 参照实现（asus v2.2.0）把「共 N 款 · 目录更新」
+        # 放在这里。中栏 340px 横跨显示，比塞进 250px 的导航栏标题行宽裕得多。
+        mfoot = ttk.Frame(mf, style="Card.TFrame")
+        mfoot.grid(row=2, column=0, sticky="ew", pady=(S(8), S(0)))
+        ttk.Label(mfoot, textvariable=self.v_cat,
+                  style="MonoSub.TLabel").pack(side="left")
+        ttk.Label(mfoot, textvariable=self.v_cat_upd,
+                  style="MonoDim.TLabel").pack(side="right")
+        mwrap.columnconfigure(0, weight=1)
+        mwrap.rowconfigure(0, weight=1)
+        self.board_tree = ttk.Treeview(mwrap, show="tree", selectmode="browse",
+                                       height=16, style="Mod.Treeview")
+        self.board_tree.grid(row=0, column=0, sticky="nsew")
+        _bsb = ttk.Scrollbar(mwrap, orient="vertical", command=self.board_tree.yview)
+        self.board_tree.configure(yscrollcommand=_bsb.set)
+        _bsb.grid(row=0, column=1, sticky="ns")
+        self.board_tree.bind("<<TreeviewSelect>>", self._on_board_select)
+        # 型号名超出列宽时用悬停提示补全（栏2 不按 max 定宽的理由见常量区注释）
+        self.board_tree.bind("<Motion>", self._on_board_motion)
+        self.board_tree.bind("<Leave>", self._on_board_leave)
+        self._hover_board = None
+        self._tip = None
+
+    def _ui_bios_card(self, body):
+        """栏 3：BIOS 列表 —— 标题行、主板级提示、分组框、列表宿主、右键菜单。"""
         # ===== 右：BIOS 明细 =====
         rf = self._card(body)
         rf.grid(row=0, column=4, sticky="nsew")
@@ -2722,7 +2794,10 @@ class App:
         # 选中行变化 → 底部详情同步（v2.5.0）
         self.tv.bind("<<TreeviewSelect>>",
                      lambda _e: self._show_detail(self._selected_item()))
+        return rf
 
+    def _ui_detail_zone(self, rf):
+        """选中版本详情凹槽：版本/日期/大小 + 复制链接 + 下载 + 说明 + SHA-256。"""
         # ---------- 选中版本详情（v2.5.0，参照 asus_bios_checker v2.2.0）
         # 为什么值得单独一块：表格把「说明」列让给宽度、只能显示一行且常被截断；
         # 详情区把同一个版本的完整信息摊平显示（不截断，最多 DETAIL_MAX_LINES 行），
@@ -2778,6 +2853,8 @@ class App:
         self._detail_zone.bind("<Configure>", self._on_detail_configure, add="+")
         self._show_detail(None)
 
+    def _ui_empty_state(self):
+        """列表空状态占位，同时覆盖「未选型号 / 查询中 / 无数据」三种语义。"""
         # ---------- 空状态占位（三种语义：未选型号 / 查询中 / 无数据）
         self._empty_box = tk.Frame(self._list_holder, bg=C_CARD)
         # v2.2.0：整块用 place 居中。旧版靠图标上方的固定 pady(40) 近似居上排布，
@@ -2810,6 +2887,8 @@ class App:
         self._bind_hover(self._empty_btn, C_BTN, C_BTN_HOVER)
         self._show_empty(True)
 
+    def _ui_download_row(self):
+        """工具条行 0：保存目录（可点即打开）+ 选择 / 打开目录 / 取消 / 下载。"""
         # ---------- 下载区（v2.5.0：已升为跨三栏底部工具条，见 _abar）
         # 旧版这几行常驻在右卡片内部（占卡片高约 17%），且保存目录路径被 790px 的
         # 卡片挤到截断。现在容器换成窗口底部的 arow —— 控件本身与它们的 grid 列
@@ -2890,6 +2969,8 @@ class App:
                                 (self.btn_dl, C_ACCENT_BTN, C_ACCENT_BTN_HOT)):
             self._bind_hover(_b, _base, _hot)
 
+    def _ui_progress_row(self):
+        """工具条行 1：自绘胶囊进度条 + 速度/剩余时间文案。"""
         # v2.5.0：进度行同样搬到窗口底部的 prow（同一工具条的第二行）
         pbar = self._prow
         self._pbar_row = pbar
@@ -2912,6 +2993,8 @@ class App:
         self._pb_compact = False
         pbar.bind("<Configure>", self._fit_progress_text, add="+")
 
+    def _ui_toast(self, rf):
+        """结果横幅：下载完成或失败的即时反馈，默认隐藏，由 `_toast_show` 唤出。"""
         # 结果横幅（v2.4.0）：下载完成 / 失败的即时反馈，不必等弹窗
         # v2.0.0 修复：右栏 rf 的子控件全部走 grid，旧版这里用 pack 显示，
         # TclError 被 except 吞掉 —— 横幅其实从未真正显示过。
@@ -2922,9 +3005,14 @@ class App:
                                    fg=C_OK, anchor="w", justify="left", wraplength=S(760))
         self._toast_lbl.pack(fill="x", padx=S(12), pady=S(7))
 
+    def _ui_finish(self):
+        """收尾：关窗协议（保存几何与展开状态）+ 启动即显示实际保存目录。"""
         # v2.2.0：关窗时保存窗口几何与目录树展开状态（见 _on_close）
+        # v2.5.4：拆分后这里原本写的是裸 `root`（旧 _build_ui 的局部变量），
+        # 会抛 NameError 并被下面的 except 吞掉 —— 协议静默失效、关窗不再存盘。
+        # 统一走 self.root；`_p_v254_uistruct.py` 现在会断言该协议确实已绑定。
         try:
-            root.protocol("WM_DELETE_WINDOW", self._on_close)
+            self.root.protocol("WM_DELETE_WINDOW", self._on_close)
         except Exception:
             pass
         # 启动即显示实际保存目录（旧版这里是空白，用户不知道文件会存到哪）

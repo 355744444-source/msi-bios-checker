@@ -386,6 +386,39 @@ CONST_NAMES = (
 )
 
 
+# 硬依赖：必须在 exe 归档里真的存在。缺失时 PyInstaller 只在 warn 文件里记一行，
+# EXE 照样生成（体积会小一圈），字节码比对也照样全绿 —— 真跑起来才 ImportError。
+FROZEN_MODULES = (
+    ("curl_cffi", "网络层：MsiApi 里 from curl_cffi import requests"),
+    ("curl_cffi.requests", "requests 子模块"),
+    ("tkinter", "界面"),
+    ("certifi", "HTTPS 证书链"),
+)
+
+
+def _check_frozen_deps(car, c):
+    """校验 exe 归档的**依赖完整性**（与「源码字节码是否同源」是两回事）。
+
+    2026-10-28 实测踩过：打包用的解释器没装 curl_cffi，PyInstaller 只在
+    `warn-*.txt` 里记一行 `missing module named curl_cffi`，EXE 正常生成
+    （10.6 MB，正常 14.6 MB），而 frozen 的字符串/标识符比对全部通过。
+    这种 exe 一联网就 ImportError，发出去等于发个不能用的壳。
+    """
+    toc = set(car.toc)
+    pyz = set(car.open_embedded_archive("PYZ.pyz").toc)
+    for mod, why in FROZEN_MODULES:
+        hit = (mod in pyz or mod in toc
+               or any(k.startswith(mod + ".") for k in pyz)
+               or any(k.startswith(mod + "\\") for k in toc))
+        c.ck(hit, "归档含依赖模块 %-18s（%s）" % (mod, why))
+    c.ck(any(k.lower().startswith("_tkinter") for k in toc),
+         "归档含 _tkinter.pyd（Tk 运行时）")
+    ncurl = [k for k in toc if k.lower().endswith(".dll") and "curl" in k.lower()]
+    c.ck(bool(ncurl), "归档含 curl 原生库 %d 个" % len(ncurl))
+    if ncurl:
+        print("        %s" % ", ".join(sorted(ncurl)[:3]))
+
+
 def step_frozen(ctx, args):
     from PyInstaller.archive.readers import CArchiveReader
 
@@ -471,6 +504,7 @@ def step_frozen(ctx, args):
     for v in stale:
         c.ck(False, "frozen 内仍有旧版本常量 %r" % v)
 
+    _check_frozen_deps(car, c)
     return c.done("frozen 源码一致性校验全部通过 ✓")
 
 
@@ -650,7 +684,7 @@ def step_deploy(ctx, args):
         print("  SKIP  桌面无版本名副本不存在，跳过")
 
     if ctx.prev_desk_exe and os.path.isfile(ctx.prev_desk_exe):
-        print("  NOTE  桌面仍留有上一版：%s（%d bytes）—— 交给 clean 处理"
+        print("  NOTE  桌面仍留有上一版：%s（%d bytes）—— 保留作回退点，clean 不动桌面"
               % (os.path.basename(ctx.prev_desk_exe), os.path.getsize(ctx.prev_desk_exe)))
     return c.done("桌面部署完成 ✓")
 

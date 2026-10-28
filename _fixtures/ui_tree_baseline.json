@@ -1,0 +1,2914 @@
+[
+ {
+  "path": ".!frame",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   0,
+   0,
+   1440,
+   820
+  ],
+  "req": [
+   1353,
+   453
+  ],
+  "grid": {},
+  "pack": {
+   "side": "top",
+   "fill": "both",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   0,
+   0,
+   1440,
+   2
+  ],
+  "req": [
+   24,
+   2
+  ],
+  "grid": {},
+  "pack": {
+   "side": "top",
+   "fill": "x",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame.!frame",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   0,
+   0,
+   60,
+   2
+  ],
+  "req": [
+   1,
+   2
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "both",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame.!frame2",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   60,
+   0,
+   60,
+   2
+  ],
+  "req": [
+   1,
+   2
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "both",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame.!frame3",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   120,
+   0,
+   60,
+   2
+  ],
+  "req": [
+   1,
+   2
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "both",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame.!frame4",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   180,
+   0,
+   60,
+   2
+  ],
+  "req": [
+   1,
+   2
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "both",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame.!frame5",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   240,
+   0,
+   60,
+   2
+  ],
+  "req": [
+   1,
+   2
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "both",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame.!frame6",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   300,
+   0,
+   60,
+   2
+  ],
+  "req": [
+   1,
+   2
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "both",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame.!frame7",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   360,
+   0,
+   60,
+   2
+  ],
+  "req": [
+   1,
+   2
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "both",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame.!frame8",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   420,
+   0,
+   60,
+   2
+  ],
+  "req": [
+   1,
+   2
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "both",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame.!frame9",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   480,
+   0,
+   60,
+   2
+  ],
+  "req": [
+   1,
+   2
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "both",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame.!frame10",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   540,
+   0,
+   60,
+   2
+  ],
+  "req": [
+   1,
+   2
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "both",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame.!frame11",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   600,
+   0,
+   60,
+   2
+  ],
+  "req": [
+   1,
+   2
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "both",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame.!frame12",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   660,
+   0,
+   60,
+   2
+  ],
+  "req": [
+   1,
+   2
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "both",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame.!frame13",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   720,
+   0,
+   60,
+   2
+  ],
+  "req": [
+   1,
+   2
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "both",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame.!frame14",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   780,
+   0,
+   60,
+   2
+  ],
+  "req": [
+   1,
+   2
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "both",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame.!frame15",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   840,
+   0,
+   60,
+   2
+  ],
+  "req": [
+   1,
+   2
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "both",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame.!frame16",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   900,
+   0,
+   60,
+   2
+  ],
+  "req": [
+   1,
+   2
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "both",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame.!frame17",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   960,
+   0,
+   60,
+   2
+  ],
+  "req": [
+   1,
+   2
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "both",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame.!frame18",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   1020,
+   0,
+   60,
+   2
+  ],
+  "req": [
+   1,
+   2
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "both",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame.!frame19",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   1080,
+   0,
+   60,
+   2
+  ],
+  "req": [
+   1,
+   2
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "both",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame.!frame20",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   1140,
+   0,
+   60,
+   2
+  ],
+  "req": [
+   1,
+   2
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "both",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame.!frame21",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   1200,
+   0,
+   60,
+   2
+  ],
+  "req": [
+   1,
+   2
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "both",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame.!frame22",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   1260,
+   0,
+   60,
+   2
+  ],
+  "req": [
+   1,
+   2
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "both",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame.!frame23",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   1320,
+   0,
+   60,
+   2
+  ],
+  "req": [
+   1,
+   2
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "both",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame.!frame24",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   1380,
+   0,
+   60,
+   2
+  ],
+  "req": [
+   1,
+   2
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "both",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame2",
+  "cls": "TFrame",
+  "mgr": "pack",
+  "geo": [
+   0,
+   2,
+   1440,
+   67
+  ],
+  "req": [
+   775,
+   67
+  ],
+  "grid": {},
+  "pack": {
+   "side": "top",
+   "fill": "x",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame2.!frame",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   20,
+   23,
+   10,
+   28
+  ],
+  "req": [
+   10,
+   28
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "(0, 12)",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame2.!label",
+  "cls": "TLabel",
+  "mgr": "pack",
+  "geo": [
+   42,
+   16,
+   325,
+   43
+  ],
+  "req": [
+   325,
+   43
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": "微星主板 BIOS 下载工具"
+ },
+ {
+  "path": ".!frame.!frame2.!frame2",
+  "cls": "TFrame",
+  "mgr": "pack",
+  "geo": [
+   1032,
+   17,
+   388,
+   41
+  ],
+  "req": [
+   388,
+   41
+  ],
+  "grid": {},
+  "pack": {
+   "side": "right",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame2.!frame2.!button",
+  "cls": "TButton",
+  "mgr": "pack",
+  "geo": [
+   289,
+   0,
+   99,
+   41
+  ],
+  "req": [
+   99,
+   41
+  ],
+  "grid": {},
+  "pack": {
+   "side": "right",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "(16, 0)",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": "设置"
+ },
+ {
+  "path": ".!frame.!frame2.!frame2.!label",
+  "cls": "TLabel",
+  "mgr": "pack",
+  "geo": [
+   0,
+   8,
+   273,
+   25
+  ],
+  "req": [
+   273,
+   25
+  ],
+  "grid": {},
+  "pack": {
+   "side": "right",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": "{V}   |   江苏振远智能科技有限公司"
+ },
+ {
+  "path": ".!frame.!frame3",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   0,
+   819,
+   1440,
+   1
+  ],
+  "req": [
+   1,
+   1
+  ],
+  "grid": {},
+  "pack": {
+   "side": "bottom",
+   "fill": "x",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame4",
+  "cls": "TFrame",
+  "mgr": "pack",
+  "geo": [
+   0,
+   776,
+   1440,
+   43
+  ],
+  "req": [
+   368,
+   43
+  ],
+  "grid": {},
+  "pack": {
+   "side": "bottom",
+   "fill": "x",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame4.!label",
+  "cls": "Label",
+  "mgr": "pack",
+  "geo": [
+   20,
+   8,
+   16,
+   27
+  ],
+  "req": [
+   16,
+   27
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "(0, 8)",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": "●"
+ },
+ {
+  "path": ".!frame.!frame4.!label2",
+  "cls": "Label",
+  "mgr": "pack",
+  "geo": [
+   44,
+   8,
+   244,
+   27
+  ],
+  "req": [
+   244,
+   27
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": "就绪 · 请在左侧选择一款主板型号"
+ },
+ {
+  "path": ".!frame.!frame4.!label3",
+  "cls": "Label",
+  "mgr": "pack",
+  "geo": [
+   1360,
+   8,
+   60,
+   27
+  ],
+  "req": [
+   60,
+   27
+  ],
+  "grid": {},
+  "pack": {
+   "side": "right",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": "{V}"
+ },
+ {
+  "path": ".!frame.!frame5",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   0,
+   775,
+   1440,
+   1
+  ],
+  "req": [
+   1,
+   1
+  ],
+  "grid": {},
+  "pack": {
+   "side": "bottom",
+   "fill": "x",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame6",
+  "cls": "TFrame",
+  "mgr": "pack",
+  "geo": [
+   0,
+   676,
+   1440,
+   99
+  ],
+  "req": [
+   641,
+   99
+  ],
+  "grid": {},
+  "pack": {
+   "side": "bottom",
+   "fill": "x",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame6.!frame",
+  "cls": "TFrame",
+  "mgr": "grid",
+  "geo": [
+   20,
+   8,
+   1400,
+   50
+  ],
+  "req": [
+   601,
+   50
+  ],
+  "grid": {
+   "row": "0",
+   "column": "0",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "ew",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame6.!frame.!frame",
+  "cls": "TFrame",
+  "mgr": "grid",
+  "geo": [
+   0,
+   11,
+   240,
+   27
+  ],
+  "req": [
+   240,
+   27
+  ],
+  "grid": {
+   "row": "0",
+   "column": "0",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "w",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame6.!frame.!frame.!label",
+  "cls": "TLabel",
+  "mgr": "pack",
+  "geo": [
+   0,
+   1,
+   36,
+   25
+  ],
+  "req": [
+   36,
+   25
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "(0, 6)",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": "目录"
+ },
+ {
+  "path": ".!frame.!frame6.!frame.!frame.!label2",
+  "cls": "Label",
+  "mgr": "pack",
+  "geo": [
+   42,
+   0,
+   198,
+   27
+  ],
+  "req": [
+   198,
+   27
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": "C:\\Users\\MSI\\Downloads"
+ },
+ {
+  "path": ".!frame.!frame6.!frame.!button",
+  "cls": "Button",
+  "mgr": "grid",
+  "geo": [
+   1039,
+   0,
+   80,
+   50
+  ],
+  "req": [
+   80,
+   43
+  ],
+  "grid": {
+   "row": "0",
+   "column": "2",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "nesw",
+   "padx": "(0, 10)",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": "选择…"
+ },
+ {
+  "path": ".!frame.!frame6.!frame.!button2",
+  "cls": "Button",
+  "mgr": "grid",
+  "geo": [
+   1129,
+   0,
+   99,
+   50
+  ],
+  "req": [
+   99,
+   43
+  ],
+  "grid": {
+   "row": "0",
+   "column": "3",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "nesw",
+   "padx": "(0, 10)",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": "打开目录"
+ },
+ {
+  "path": ".!frame.!frame6.!frame.!button3",
+  "cls": "Button",
+  "mgr": "",
+  "geo": [
+   0,
+   0,
+   1,
+   1
+  ],
+  "req": [
+   99,
+   43
+  ],
+  "grid": {},
+  "pack": {},
+  "text": "取消下载"
+ },
+ {
+  "path": ".!frame.!frame6.!frame.!button4",
+  "cls": "Button",
+  "mgr": "grid",
+  "geo": [
+   1238,
+   0,
+   162,
+   50
+  ],
+  "req": [
+   162,
+   50
+  ],
+  "grid": {
+   "row": "0",
+   "column": "5",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "nesw",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": "下载选中版本"
+ },
+ {
+  "path": ".!frame.!frame6.!frame2",
+  "cls": "TFrame",
+  "mgr": "grid",
+  "geo": [
+   20,
+   68,
+   1400,
+   25
+  ],
+  "req": [
+   463,
+   25
+  ],
+  "grid": {
+   "row": "1",
+   "column": "0",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "ew",
+   "padx": "0",
+   "pady": "(10, 0)",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame6.!frame2.!pbarcanvas",
+  "cls": "Canvas",
+  "mgr": "pack",
+  "geo": [
+   0,
+   7,
+   997,
+   10
+  ],
+  "req": [
+   60,
+   10
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "x",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame6.!frame2.!label",
+  "cls": "TLabel",
+  "mgr": "pack",
+  "geo": [
+   1009,
+   0,
+   391,
+   25
+  ],
+  "req": [
+   391,
+   25
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "(12, 0)",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": ""
+ },
+ {
+  "path": ".!frame.!frame7",
+  "cls": "TFrame",
+  "mgr": "pack",
+  "geo": [
+   0,
+   69,
+   1440,
+   607
+  ],
+  "req": [
+   1353,
+   240
+  ],
+  "grid": {},
+  "pack": {
+   "side": "top",
+   "fill": "both",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame",
+  "cls": "TFrame",
+  "mgr": "grid",
+  "geo": [
+   20,
+   8,
+   270,
+   593
+  ],
+  "req": [
+   270,
+   1
+  ],
+  "grid": {
+   "row": "0",
+   "column": "0",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "nesw",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame.!frame",
+  "cls": "TFrame",
+  "mgr": "grid",
+  "geo": [
+   16,
+   16,
+   238,
+   38
+  ],
+  "req": [
+   220,
+   38
+  ],
+  "grid": {
+   "row": "0",
+   "column": "0",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "ew",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame.!frame.!label",
+  "cls": "TLabel",
+  "mgr": "pack",
+  "geo": [
+   0,
+   2,
+   92,
+   34
+  ],
+  "req": [
+   92,
+   34
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": "主板目录"
+ },
+ {
+  "path": ".!frame.!frame7.!frame.!frame.!button",
+  "cls": "Button",
+  "mgr": "pack",
+  "geo": [
+   152,
+   4,
+   80,
+   29
+  ],
+  "req": [
+   80,
+   29
+  ],
+  "grid": {},
+  "pack": {
+   "side": "right",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "(0, 6)",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": "折叠全部"
+ },
+ {
+  "path": ".!frame.!frame7.!frame.!frame.!button2",
+  "cls": "Button",
+  "mgr": "pack",
+  "geo": [
+   110,
+   0,
+   42,
+   38
+  ],
+  "req": [
+   42,
+   38
+  ],
+  "grid": {},
+  "pack": {
+   "side": "right",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": "↻"
+ },
+ {
+  "path": ".!frame.!frame7.!frame.!frame2",
+  "cls": "Frame",
+  "mgr": "grid",
+  "geo": [
+   16,
+   64,
+   238,
+   37
+  ],
+  "req": [
+   190,
+   37
+  ],
+  "grid": {
+   "row": "1",
+   "column": "0",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "ew",
+   "padx": "0",
+   "pady": "(10, 6)",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame.!frame2.!entry",
+  "cls": "Entry",
+  "mgr": "pack",
+  "geo": [
+   0,
+   0,
+   238,
+   37
+  ],
+  "req": [
+   184,
+   25
+  ],
+  "grid": {},
+  "pack": {
+   "side": "top",
+   "fill": "x",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "3",
+   "ipady": "6"
+  },
+  "text": "搜索型号 / 芯片组…"
+ },
+ {
+  "path": ".!frame.!frame7.!frame.!frame3",
+  "cls": "TFrame",
+  "mgr": "grid",
+  "geo": [
+   16,
+   107,
+   238,
+   466
+  ],
+  "req": [
+   230,
+   420
+  ],
+  "grid": {
+   "row": "2",
+   "column": "0",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "nesw",
+   "padx": "0",
+   "pady": "(0, 4)",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame.!frame3.!treeview",
+  "cls": "Treeview",
+  "mgr": "grid",
+  "geo": [
+   0,
+   0,
+   222,
+   466
+  ],
+  "req": [
+   214,
+   420
+  ],
+  "grid": {
+   "row": "0",
+   "column": "0",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "nesw",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame.!frame3.!scrollbar",
+  "cls": "TScrollbar",
+  "mgr": "grid",
+  "geo": [
+   222,
+   0,
+   16,
+   466
+  ],
+  "req": [
+   16,
+   38
+  ],
+  "grid": {
+   "row": "0",
+   "column": "1",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "ns",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame.!frame4",
+  "cls": "Frame",
+  "mgr": "",
+  "geo": [
+   0,
+   0,
+   1,
+   1
+  ],
+  "req": [
+   229,
+   27
+  ],
+  "grid": {},
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame.!frame4.!label",
+  "cls": "Label",
+  "mgr": "pack",
+  "geo": [
+   0,
+   0,
+   1,
+   1
+  ],
+  "req": [
+   229,
+   27
+  ],
+  "grid": {},
+  "pack": {
+   "side": "top",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "w",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": "目录中未找到 → 去官网搜索 ↗"
+ },
+ {
+  "path": ".!frame.!frame7.!frame2",
+  "cls": "Frame",
+  "mgr": "grid",
+  "geo": [
+   290,
+   8,
+   10,
+   593
+  ],
+  "req": [
+   10,
+   1
+  ],
+  "grid": {
+   "row": "0",
+   "column": "1",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "ns",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame2.!frame",
+  "cls": "Frame",
+  "mgr": "place",
+  "geo": [
+   5,
+   0,
+   1,
+   593
+  ],
+  "req": [
+   1,
+   1
+  ],
+  "grid": {},
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame3",
+  "cls": "Frame",
+  "mgr": "grid",
+  "geo": [
+   640,
+   8,
+   10,
+   593
+  ],
+  "req": [
+   10,
+   1
+  ],
+  "grid": {
+   "row": "0",
+   "column": "3",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "ns",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame3.!frame",
+  "cls": "Frame",
+  "mgr": "place",
+  "geo": [
+   5,
+   0,
+   1,
+   593
+  ],
+  "req": [
+   1,
+   1
+  ],
+  "grid": {},
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame4",
+  "cls": "TFrame",
+  "mgr": "grid",
+  "geo": [
+   300,
+   8,
+   340,
+   593
+  ],
+  "req": [
+   340,
+   1
+  ],
+  "grid": {
+   "row": "0",
+   "column": "2",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "nesw",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame4.!frame",
+  "cls": "TFrame",
+  "mgr": "grid",
+  "geo": [
+   16,
+   16,
+   308,
+   34
+  ],
+  "req": [
+   96,
+   34
+  ],
+  "grid": {
+   "row": "0",
+   "column": "0",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "ew",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame4.!frame.!label",
+  "cls": "TLabel",
+  "mgr": "pack",
+  "geo": [
+   0,
+   0,
+   92,
+   34
+  ],
+  "req": [
+   92,
+   34
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": "主板型号"
+ },
+ {
+  "path": ".!frame.!frame7.!frame4.!frame.!label2",
+  "cls": "TLabel",
+  "mgr": "pack",
+  "geo": [
+   304,
+   4,
+   4,
+   25
+  ],
+  "req": [
+   4,
+   25
+  ],
+  "grid": {},
+  "pack": {
+   "side": "right",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": ""
+ },
+ {
+  "path": ".!frame.!frame7.!frame4.!frame2",
+  "cls": "Frame",
+  "mgr": "grid",
+  "geo": [
+   16,
+   60,
+   308,
+   484
+  ],
+  "req": [
+   300,
+   484
+  ],
+  "grid": {
+   "row": "1",
+   "column": "0",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "nesw",
+   "padx": "0",
+   "pady": "(10, 0)",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame4.!frame2.!treeview",
+  "cls": "Treeview",
+  "mgr": "grid",
+  "geo": [
+   0,
+   0,
+   292,
+   484
+  ],
+  "req": [
+   284,
+   484
+  ],
+  "grid": {
+   "row": "0",
+   "column": "0",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "nesw",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame4.!frame2.!scrollbar",
+  "cls": "TScrollbar",
+  "mgr": "grid",
+  "geo": [
+   292,
+   0,
+   16,
+   484
+  ],
+  "req": [
+   16,
+   38
+  ],
+  "grid": {
+   "row": "0",
+   "column": "1",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "ns",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame4.!frame3",
+  "cls": "TFrame",
+  "mgr": "grid",
+  "geo": [
+   16,
+   552,
+   308,
+   25
+  ],
+  "req": [
+   65,
+   25
+  ],
+  "grid": {
+   "row": "2",
+   "column": "0",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "ew",
+   "padx": "0",
+   "pady": "(8, 0)",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame4.!frame3.!label",
+  "cls": "TLabel",
+  "mgr": "pack",
+  "geo": [
+   0,
+   0,
+   61,
+   25
+  ],
+  "req": [
+   61,
+   25
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": "加载中…"
+ },
+ {
+  "path": ".!frame.!frame7.!frame4.!frame3.!label2",
+  "cls": "TLabel",
+  "mgr": "pack",
+  "geo": [
+   304,
+   0,
+   4,
+   25
+  ],
+  "req": [
+   4,
+   25
+  ],
+  "grid": {},
+  "pack": {
+   "side": "right",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": ""
+ },
+ {
+  "path": ".!frame.!frame7.!frame5",
+  "cls": "TFrame",
+  "mgr": "grid",
+  "geo": [
+   650,
+   8,
+   770,
+   593
+  ],
+  "req": [
+   683,
+   226
+  ],
+  "grid": {
+   "row": "0",
+   "column": "4",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "nesw",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame",
+  "cls": "TFrame",
+  "mgr": "grid",
+  "geo": [
+   16,
+   71,
+   738,
+   368
+  ],
+  "req": [
+   1,
+   1
+  ],
+  "grid": {
+   "row": "2",
+   "column": "0",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "nesw",
+   "padx": "0",
+   "pady": "(10, 4)",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame.!frame",
+  "cls": "Frame",
+  "mgr": "",
+  "geo": [
+   0,
+   0,
+   1,
+   1
+  ],
+  "req": [
+   28,
+   41
+  ],
+  "grid": {},
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame.!frame.!label",
+  "cls": "Label",
+  "mgr": "pack",
+  "geo": [
+   0,
+   0,
+   1,
+   1
+  ],
+  "req": [
+   6,
+   27
+  ],
+  "grid": {},
+  "pack": {
+   "side": "top",
+   "fill": "x",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "10",
+   "pady": "6",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": ""
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame.!frame2",
+  "cls": "TFrame",
+  "mgr": "",
+  "geo": [
+   0,
+   0,
+   1,
+   1
+  ],
+  "req": [
+   294,
+   31
+  ],
+  "grid": {},
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame.!frame2.!combobox",
+  "cls": "TCombobox",
+  "mgr": "pack",
+  "geo": [
+   0,
+   0,
+   1,
+   1
+  ],
+  "req": [
+   294,
+   31
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": ""
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame.!frame3",
+  "cls": "TFrame",
+  "mgr": "pack",
+  "geo": [
+   0,
+   0,
+   738,
+   368
+  ],
+  "req": [
+   1,
+   1
+  ],
+  "grid": {},
+  "pack": {
+   "side": "top",
+   "fill": "both",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame.!frame3.!treeview",
+  "cls": "Treeview",
+  "mgr": "",
+  "geo": [
+   0,
+   0,
+   1,
+   1
+  ],
+  "req": [
+   738,
+   427
+  ],
+  "grid": {},
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame.!frame3.!frame",
+  "cls": "Frame",
+  "mgr": "pack",
+  "geo": [
+   0,
+   0,
+   738,
+   368
+  ],
+  "req": [
+   1,
+   1
+  ],
+  "grid": {},
+  "pack": {
+   "side": "top",
+   "fill": "both",
+   "expand": "1",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame.!frame3.!frame.!frame",
+  "cls": "Frame",
+  "mgr": "place",
+  "geo": [
+   126,
+   51,
+   486,
+   230
+  ],
+  "req": [
+   486,
+   230
+  ],
+  "grid": {},
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame.!frame3.!frame.!frame.!label",
+  "cls": "Label",
+  "mgr": "pack",
+  "geo": [
+   224,
+   0,
+   37,
+   73
+  ],
+  "req": [
+   37,
+   73
+  ],
+  "grid": {},
+  "pack": {
+   "side": "top",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "(0, 6)",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": "◎"
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame.!frame3.!frame.!frame.!label2",
+  "cls": "Label",
+  "mgr": "pack",
+  "geo": [
+   152,
+   79,
+   182,
+   36
+  ],
+  "req": [
+   182,
+   36
+  ],
+  "grid": {},
+  "pack": {
+   "side": "top",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "(0, 8)",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": "尚未选择主板型号"
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame.!frame3.!frame.!frame.!label3",
+  "cls": "Label",
+  "mgr": "pack",
+  "geo": [
+   0,
+   123,
+   486,
+   48
+  ],
+  "req": [
+   486,
+   48
+  ],
+  "grid": {},
+  "pack": {
+   "side": "top",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": "在左侧主板目录里点选一款主板，或直接在搜索框输入型号关键字。\nBIOS 列表将显示在这里，并提供下载与 SHA-256 校验。"
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame.!frame3.!frame.!frame.!button",
+  "cls": "Button",
+  "mgr": "pack",
+  "geo": [
+   153,
+   187,
+   179,
+   43
+  ],
+  "req": [
+   179,
+   43
+  ],
+  "grid": {},
+  "pack": {
+   "side": "top",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "(16, 0)",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": "去微星官网搜索  ↗"
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame2",
+  "cls": "TFrame",
+  "mgr": "grid",
+  "geo": [
+   16,
+   16,
+   738,
+   45
+  ],
+  "req": [
+   487,
+   45
+  ],
+  "grid": {
+   "row": "0",
+   "column": "0",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "ew",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame2.!frame",
+  "cls": "TFrame",
+  "mgr": "pack",
+  "geo": [
+   555,
+   6,
+   183,
+   39
+  ],
+  "req": [
+   183,
+   39
+  ],
+  "grid": {},
+  "pack": {
+   "side": "right",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "(6, 0)",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame2.!frame.!button",
+  "cls": "Button",
+  "mgr": "pack",
+  "geo": [
+   16,
+   0,
+   167,
+   39
+  ],
+  "req": [
+   167,
+   39
+  ],
+  "grid": {},
+  "pack": {
+   "side": "right",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": "打开官网支持页  ↗"
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame2.!frame.!label",
+  "cls": "Label",
+  "mgr": "pack",
+  "geo": [
+   0,
+   6,
+   6,
+   26
+  ],
+  "req": [
+   6,
+   26
+  ],
+  "grid": {},
+  "pack": {
+   "side": "right",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "(0, 10)",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": ""
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame2.!label",
+  "cls": "TLabel",
+  "mgr": "pack",
+  "geo": [
+   0,
+   3,
+   290,
+   38
+  ],
+  "req": [
+   290,
+   38
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": "请先在左侧选择主板型号"
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame2.!frame2",
+  "cls": "TFrame",
+  "mgr": "pack",
+  "geo": [
+   300,
+   14,
+   4,
+   25
+  ],
+  "req": [
+   4,
+   25
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "(10, 0)",
+   "pady": "(9, 0)",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame2.!frame2.!label",
+  "cls": "TLabel",
+  "mgr": "pack",
+  "geo": [
+   0,
+   0,
+   4,
+   25
+  ],
+  "req": [
+   4,
+   25
+  ],
+  "grid": {},
+  "pack": {
+   "side": "left",
+   "fill": "none",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": ""
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame3",
+  "cls": "Frame",
+  "mgr": "grid",
+  "geo": [
+   16,
+   451,
+   738,
+   126
+  ],
+  "req": [
+   651,
+   126
+  ],
+  "grid": {
+   "row": "4",
+   "column": "0",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "nesw",
+   "padx": "0",
+   "pady": "(8, 0)",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame3.!frame",
+  "cls": "Frame",
+  "mgr": "grid",
+  "geo": [
+   13,
+   10,
+   712,
+   41
+  ],
+  "req": [
+   315,
+   41
+  ],
+  "grid": {
+   "row": "0",
+   "column": "0",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "ew",
+   "padx": "12",
+   "pady": "(9, 0)",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame3.!frame.!label",
+  "cls": "Label",
+  "mgr": "grid",
+  "geo": [
+   0,
+   5,
+   25,
+   31
+  ],
+  "req": [
+   25,
+   31
+  ],
+  "grid": {
+   "row": "0",
+   "column": "0",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "w",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": "—"
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame3.!frame.!label2",
+  "cls": "Label",
+  "mgr": "grid",
+  "geo": [
+   35,
+   7,
+   6,
+   27
+  ],
+  "req": [
+   6,
+   27
+  ],
+  "grid": {
+   "row": "0",
+   "column": "1",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "w",
+   "padx": "(10, 0)",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": ""
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame3.!frame.!label3",
+  "cls": "Label",
+  "mgr": "grid",
+  "geo": [
+   53,
+   7,
+   6,
+   27
+  ],
+  "req": [
+   6,
+   27
+  ],
+  "grid": {
+   "row": "0",
+   "column": "2",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "w",
+   "padx": "(12, 0)",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": ""
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame3.!frame.!button",
+  "cls": "Button",
+  "mgr": "grid",
+  "geo": [
+   456,
+   0,
+   131,
+   41
+  ],
+  "req": [
+   131,
+   41
+  ],
+  "grid": {
+   "row": "0",
+   "column": "4",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "e",
+   "padx": "0",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": "复制下载链接"
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame3.!frame.!button2",
+  "cls": "Button",
+  "mgr": "grid",
+  "geo": [
+   595,
+   1,
+   117,
+   39
+  ],
+  "req": [
+   117,
+   39
+  ],
+  "grid": {
+   "row": "0",
+   "column": "5",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "e",
+   "padx": "(8, 0)",
+   "pady": "0",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": "下载此版本"
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame3.!label",
+  "cls": "Label",
+  "mgr": "grid",
+  "geo": [
+   13,
+   57,
+   712,
+   27
+  ],
+  "req": [
+   625,
+   27
+  ],
+  "grid": {
+   "row": "1",
+   "column": "0",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "ew",
+   "padx": "12",
+   "pady": "(6, 0)",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": "在上方列表里选中一个 BIOS 版本，这里会显示它的完整更新说明与 SHA-256 校验值。"
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame3.!label2",
+  "cls": "Label",
+  "mgr": "grid",
+  "geo": [
+   13,
+   90,
+   712,
+   26
+  ],
+  "req": [
+   6,
+   26
+  ],
+  "grid": {
+   "row": "2",
+   "column": "0",
+   "rowspan": "1",
+   "columnspan": "1",
+   "sticky": "ew",
+   "padx": "12",
+   "pady": "(6, 9)",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "pack": {},
+  "text": ""
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame4",
+  "cls": "Frame",
+  "mgr": "",
+  "geo": [
+   0,
+   0,
+   1,
+   1
+  ],
+  "req": [
+   32,
+   43
+  ],
+  "grid": {},
+  "pack": {},
+  "text": null
+ },
+ {
+  "path": ".!frame.!frame7.!frame5.!frame4.!label",
+  "cls": "Label",
+  "mgr": "pack",
+  "geo": [
+   0,
+   0,
+   1,
+   1
+  ],
+  "req": [
+   6,
+   27
+  ],
+  "grid": {},
+  "pack": {
+   "side": "top",
+   "fill": "x",
+   "expand": "0",
+   "anchor": "center",
+   "padx": "12",
+   "pady": "7",
+   "ipadx": "0",
+   "ipady": "0"
+  },
+  "text": ""
+ },
+ {
+  "path": ".!menu",
+  "cls": "Menu",
+  "mgr": "wm",
+  "geo": [
+   0,
+   0,
+   1,
+   1
+  ],
+  "req": [
+   135,
+   88
+  ],
+  "grid": {},
+  "pack": {},
+  "text": null
+ }
+]

@@ -34,6 +34,11 @@ CASES = [
     # v2.5.3：栏 2 省略号口径统一后的行为验证。断言显示串不溢出 / 不过度截短 /
     # 省略串是全名前缀，并统计新旧实现的实际差异条数（实测 0，属纯去重）。
     "_p_v253_ellipsis",
+    # v2.5.4：_build_ui 拆成 16 段 _ui_* 后的**结构等价**证明。逐控件比对
+    # 类 / 布局参数 / 实测几何 / 文本（基线 _fixtures/ui_tree_baseline.json），
+    # 外加两条运行时契约：关窗协议必须真的改绑到 _on_close。
+    # 负向对照已验：把 dot_status 的 pack 方向左→右，它报 3 条差异（1 布局 + 2 几何）。
+    "_p_v254_uistruct",
     "_p_v240_contrast",
     "_p_v240_tagprio",
     "_p_v240_latestbg",
@@ -86,7 +91,7 @@ def main():
         results.append((name, p.returncode, "OK" if ok else "FAIL", dt))
 
     print("=" * 62)
-    print("v2.5.3 gate summary")
+    print("v2.5.4 gate summary")
     print("=" * 62)
     bad = 0
     for row in results:
