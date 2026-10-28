@@ -70,8 +70,19 @@ def mapped(row):
 
 
 def btn_seq(row, names):
-    """按 x 取出指定标题的按钮，返回 [(x, w, 标题)]；缺失即断言失败。"""
-    got = dict((t, (x, w)) for x, w, t in mapped(row) if t in names)
+    """按 x 取出指定标题的按钮，返回 [(x, w, 标题)]；缺失即断言失败。
+
+    v2.5.5：主按钮文案跟着选中版本走（「下载 7D89v1C2」），不再是固定串
+    「下载选中版本」。所以对 MAIN 改按**前缀**「下载」匹配 —— 否则一旦列表里
+    已经有选中行，这里就会误报「未找到」。
+    """
+    pool = mapped(row)
+    got = {}
+    for nm in names:
+        for x, w, t in pool:
+            if t == nm or (nm == MAIN and t.startswith("下载")):
+                got[nm] = (x, w)
+                break
     out = []
     for nm in names:
         if nm not in got:
@@ -173,15 +184,45 @@ check(w >= reqw, "B1 进度文案未被裁", "实际 %d < 请求 %d" % (w, reqw)
 # ---------- 信息不重复 ----------
 print()
 print("=" * 88)
-print("【C】状态栏右读数 / 栏 3 数据源徽章")
+print("【C】状态栏右读数已移除 / 栏 3 数据源徽章唯一承载")
 print("=" * 88)
-sr = app.v_stat_right.get()
-print("  状态栏右读数 = %r" % sr)
-print("  栏3 数据源徽章 = %r" % app.lbl_host.cget("text"))
-check("数据源" not in sr, "C1 状态栏右读数不含「数据源」", "实测 %r" % sr)
-check("v%s" % m.APP_VERSION in sr, "C1b 状态栏右读数含应用版本号", "实测 %r" % sr)
+# v2.5.5：状态栏右侧那块读数（版本号 + 数据源）整块删除 —— 版本号顶栏已有，
+# 数据源徽章在栏 3 标题行，状态栏再复述一遍就是第三处。这里改成反向断言：
+# 属性必须**不存在**，否则说明旧读数又回来了。
+check(not hasattr(app, "v_stat_right"),
+      "C1 状态栏右读数已移除", "仍存在 v_stat_right")
 badge = app.lbl_host.cget("text")
+print("  栏3 数据源徽章 = %r" % badge)
 check("数据源：" in badge, "C2 栏3 徽章含「数据源：」", "实测 %r" % badge)
+# 版本号只剩顶栏一处：v2.5.5 把状态栏右读数整块删了，这里直接数「屏幕上还有
+# 几个控件写着 vX.Y.Z」。恰好 1 处才算过 —— 2 处说明又重复了，0 处说明顶栏丢了。
+def _walk(w, acc):
+    for c in w.winfo_children():
+        acc.append(c)
+        _walk(c, acc)
+    return acc
+
+
+def _txt(w):
+    try:
+        return str(w.cget("text") or "")
+    except Exception:
+        return ""
+
+
+_ver = "v%s" % m.APP_VERSION
+_hits = [w for w in _walk(root, []) if _ver in _txt(w)]
+print("  含 %s 的控件：%r" % (_ver, [_txt(w) for w in _hits]))
+check(len(_hits) == 1, "C3 版本号在界面上恰好出现 1 处", "实测 %d 处" % len(_hits))
+status_txt = ""
+for _name in ("v_stat", "v_status", "_status_var"):
+    _v = getattr(app, _name, None)
+    try:
+        if _v is not None:
+            status_txt += str(_v.get())
+    except Exception:
+        pass
+check(_ver not in status_txt, "C4 状态栏不再复述版本号", "实测 %r" % status_txt)
 
 root.destroy()
 print()

@@ -39,6 +39,12 @@ CASES = [
     # 外加两条运行时契约：关窗协议必须真的改绑到 _on_close。
     # 负向对照已验：把 dot_status 的 pack 方向左→右，它报 3 条差异（1 布局 + 2 几何）。
     "_p_v254_uistruct",
+    # v2.5.5：右栏表高自适应 / 标题测量口径 / 主操作唯一 / footer 分级让路。
+    # 负向对照已验（三份回退副本，均报红，不是恒真式）：
+    #   ① 表头硬编码回 26 → detail bottom 529 > 卡片内界 523
+    #   ② 测量字体去掉 -weight → gap=23px（原 bug 的精确复现）+ 3 条 FAIL
+    #   ③ 徽章不参与让路 → 1180 下徽章仍在、标题被硬切
+    "_p_v255_layout",
     "_p_v240_contrast",
     "_p_v240_tagprio",
     "_p_v240_latestbg",
@@ -47,6 +53,21 @@ CASES = [
     "_opt_gui",
     "_opt_boot_flow",
 ]
+
+
+def src_version():
+    """从产品源码里读 APP_VERSION —— 汇总标题不再写死版本号。
+
+    v2.5.4 之前这里写着 "v2.5.4 gate summary"，升版后标题与实际跑的东西
+    对不上，日志翻起来容易误判"这是哪一版的证据"。
+    """
+    try:
+        import re
+        with open(os.path.join(HERE, "msi_bios_checker.py"), encoding="utf-8") as f:
+            hit = re.search(r'^APP_VERSION\s*=\s*"([^"]+)"', f.read(), re.M)
+        return hit.group(1) if hit else "?"
+    except Exception:
+        return "?"
 
 
 def main():
@@ -91,7 +112,7 @@ def main():
         results.append((name, p.returncode, "OK" if ok else "FAIL", dt))
 
     print("=" * 62)
-    print("v2.5.4 gate summary")
+    print("v%s gate summary" % src_version())
     print("=" * 62)
     bad = 0
     for row in results:

@@ -340,7 +340,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
 APP_TITLE = "微星主板 BIOS 下载工具"
-APP_VERSION = "2.5.4"
+APP_VERSION = "2.5.5"
 APP_COMPANY = "江苏振远智能科技有限公司"
 
 # ---------------------------------------------------------------- 常量
@@ -466,6 +466,26 @@ RIGHT_DETAIL_MIN = 132   # 详情面板保底高（版本行 + 说明 4 行 + SH
 # 两者互为因果形成**布局反馈环**。华硕实测过同一窗口高度下列表区在 291~309px
 # 之间抖动、极端一次把 BIOS 表挤到 1px。行数封顶后请求高有上界，环被切断。
 DETAIL_MAX_LINES = 4
+# ---- v2.5.5 栏 3 列表高度：按行数自适应，余量沉到卡片底部
+# 为什么改：v2.5.0~v2.5.4 是「列表吃满剩余高度（weight=1）+ 详情保底 132」。
+# 实测 3 行 BIOS 时列表区 368px、其中 278px 是纯空白（75%），而详情区被压在 126px。
+# 表格底色与卡片同色、又无行分隔线，那片空白读起来像「表格还没加载完」。
+# 现在：列表高度 = min(行数, TV_MAX_ROWS) 行，详情紧跟其下，剩下的高度作为
+# **卡片底部的弹性空行** —— 读者的结论从「没加载完」变成「这张表就这么多行」。
+TV_ROWH = 32           # 与 Treeview 样式 rowheight=S(32) 同源，改一处必须改两处
+# 表头高只作**初值**：真实值由 _fit_tv_height 用 "控件请求高 − 行数×行高" 反推。
+# 实测 96 DPI 下表头实占 43px（旧值 26 少算了 17px），而 17px 足够多挤进半行 ——
+# 12 个版本时详情区正好被顶出卡片底部 11px（底部的 SHA-256 行看不见）。
+TV_HEAD_H = 43
+TV_MIN_ROWS = 3        # 再少也要留 3 行，避免 1 行数据时表格塌成一条
+TV_MAX_ROWS = 12       # 再多也不放大：长表交给滚动条，而不是把详情挤出视野
+# ---- v2.5.5 标题测量余量
+# `font measure` 与 Label 实际 `winfo_reqwidth()` 不是同一个数：Tk 的 measure 对
+# 整串一次性累加后取整，而 Label 的请求宽是逐字框累加再取整，比例字体下会差 1~4px。
+# 实测 "MPG Z790 EDGE TI WIFI"（FONT_BOARD 26px bold）：measure 318 / reqwidth 322。
+# 少了这个余量，就会出现「判定放得下 → 实际被 Label 硬切掉 4px」的尾巴 ——
+# 而且没有任何省略号提示读者「这里还有字」。
+TITLE_MEASURE_SLACK = 6
 # ---- v2.5.2 底部工具条按钮间距
 # 实测（_p_v252_btngap.py）：v2.5.1 里 `打开目录` 与 `下载选中版本` 的缝隙是 **0px**
 # ——「选择… → 打开目录」有 8px 而它没有，右侧那对贴死得像一块连体按钮。
@@ -579,9 +599,13 @@ C_BLUE_BG = "#243040"
 C_STATUS_BG = "#202327"    # 状态栏底（v2.3.2 提亮：避开 #17191f 纯黑区 GDI 子像素补偿，消除文字橙红色环）
 C_STATUS_FG = "#adb3bb"    # 状态栏文字（比 C_DIM 亮一档，ClearType 残影不可见）
 C_BTN = "#32363a"          # 次级按钮底
+C_BTN_DIS = "#2a2d31"      # 次级按钮禁用底（v2.5.5：tk.Button 禁用不会自动变暗，
+                           # 必须显式给一个比常态更沉的底色，否则"禁用"看不出来）
 C_BTN_HOVER = "#3e4247"    # 次级按钮 hover
 C_BTN_PRESS = "#494e54"    # 次级按钮 pressed
-C_HEADING = "#32363a"      # 表头底
+C_HEADING = "#3a3f45"      # 表头底（v2.5.5：#32363a → #3a3f45。
+                           # 旧值与卡片底 #272a2e 只差 12 级明度，表头与表体几乎
+                           # 连成一片，只能靠字重区分；提亮后表头自然成为一条分隔带）
 C_TROUGH = "#16181a"       # 进度条槽 / 滚动条槽
 C_SCROLL = "#41464c"       # 滚动条滑块
 # 标题栏跟随沉浸式深色：深色皮肤开启，与内容浑然一体
@@ -1825,6 +1849,7 @@ class PbarCanvas(tk.Canvas):
         self._max = float(maximum) or 100.0
         self._value = float(value)
         self._fill = C_ACCENT
+        self._idle = False
         tk.Canvas.__init__(self, master, **kw)
         self.bind("<Configure>", lambda e: self._redraw())
 
@@ -1859,6 +1884,18 @@ class PbarCanvas(tk.Canvas):
         self._fill = color
         self._redraw()
 
+    def set_idle(self, on):
+        """空闲态：槽也画成卡片底色，视觉上整条消失（v2.5.5）。
+
+        为什么不用 pack_forget：工具条会因此矮掉 20px，窗口内容上下跳一次，
+        下载一开始又要跳回来。进度条「不存在」只应该是视觉上的，不该改布局。
+        """
+        on = bool(on)
+        if on == self._idle:
+            return
+        self._idle = on
+        self._redraw()
+
     def _redraw(self):
         try:
             w, h = int(self.winfo_width()), int(self.winfo_height())
@@ -1867,7 +1904,9 @@ class PbarCanvas(tk.Canvas):
         if w < 4 or h < 2:
             return
         self.delete("all")
-        self._pill(0, 0, w, h, C_TROUGH)
+        self._pill(0, 0, w, h, C_CARD if self._idle else C_TROUGH)
+        if self._idle:
+            return
         frac = max(0.0, min(1.0, self._value / self._max))
         fw = w * frac
         if fw >= 1.0:
@@ -2080,6 +2119,9 @@ class App:
         # 在途任务计数：旧版用布尔 busy，两条请求重叠时先结束的那条会提前解除
         # 主按钮禁用（A 结束就 busy=False，而 B 还在跑）。改为计数后按「全部结束」解禁。
         self._inflight = 0
+        # v2.5.5：主按钮的「在途禁用」标记。与 _inflight 分开是因为 _busy() 还会
+        # 被下载态直接调用（下载不是队列任务，不计入 _inflight）。
+        self._busy_flag = False
         self._title_full = "请先在左侧选择主板型号"   # 标题完整文本（省略前的原文）
         self._pb_compact = False                   # 进度文案是否处于窄窗口短格式
         self._cat_busy = False          # 目录抓取是否在途（4 个入口共用，防重复抓取）
@@ -2126,6 +2168,7 @@ class App:
         self.v_cat_upd = tk.StringVar(value="")
         self._split_drag = None            # 拖动起点 (x_root, 起始宽)，None = 未在拖
         self._title_refit_job = None       # 副标题变化后的空闲重算任务（v2.3.1）
+        self._apply_palette()      # v2.5.5：必须早于建控件，见 _apply_palette docstring
         self._build_ui()
         self._apply_style()
         self._bind_shortcuts()
@@ -2134,11 +2177,26 @@ class App:
         self.root.after(300, self._boot)
 
     # ------------------------------------------------------------- 样式（微星红 · 深色电竞主题）
-    def _apply_style(self):
+    def _apply_palette(self):
+        """全局调色板与原生控件选项 —— **必须在 _build_ui 之前**（v2.5.5）。
+
+        这里踩过一个很贵的坑：`tk_setPalette` 不只是写 option 数据库，它还会
+        **反向更新所有已存在控件**的颜色。原来它写在 `_apply_style` 里，而
+        `_build_ui()` 先执行 —— 控件先建好、调色板后刷，于是每个 `ttk.Label`
+        都被塞进一个显式的 `-background #17191b`（资源名正是 frameColor），
+        压掉了自己样式里的 `background`。
+
+        后果：卡片上每一处文字背后都垫了一条比卡片暗一档的横带（实测「主板目录」
+        标签区像素 C_BG，卡片 C_CARD）。不刺眼，但整屏"脏" —— 这正是那种说不出
+        哪里不对、又怎么看都不干净的感觉的来源。
+
+        修法不是给几百个标签逐个补 `background=`，而是**把调色板提到建控件之前**，
+        并立刻 `option_clear()` —— 调色板只管根窗口（Win11 DWM 下比
+        `root.configure(bg=)` 可靠），不泄漏给随后创建的控件。
+        清完再把真正需要 option 数据库的 tk 原生控件（Entry / Listbox / Combobox
+        下拉）按主题色补回去。
+        """
         self.root.configure(bg=C_BG)
-        # 关键：tk_setPalette 强制把所有 tk 默认控件（含根窗体客户区）染主题色
-        # 单独 root.configure(bg) 在 Windows 11 DWM 下不一定生效
-        # 深色皮肤：选中态为暗红底，文字保持亮色
         try:
             self.root.tk_setPalette(
                 background=C_BG, foreground=C_TEXT,
@@ -2148,19 +2206,32 @@ class App:
             )
         except Exception:
             pass
-        # 全局 option（影响 Combobox 下拉等 tk 原生 popdown）
+        # 顺序不能反：先清，再补 —— 补的条目本身也在数据库里，会被 clear 掉
         try:
-            self.root.option_add("*TCombobox*Listbox.background", C_CARD)
-            self.root.option_add("*TCombobox*Listbox.foreground", C_TEXT)
-            self.root.option_add("*TCombobox*Listbox.selectBackground", C_SEL_BG)
-            self.root.option_add("*TCombobox*Listbox.selectForeground", C_TEXT)
-            self.root.option_add("*TCombobox*Listbox.font", FONT_S)
-            self.root.option_add("*Listbox.background", C_CARD)
-            self.root.option_add("*Listbox.foreground", C_TEXT)
-            self.root.option_add("*Listbox.selectBackground", C_SEL_BG)
-            self.root.option_add("*Listbox.selectForeground", C_TEXT)
+            self.root.option_clear()
         except Exception:
             pass
+        try:
+            for _pat, _val in (
+                    ("*Entry.selectBackground", C_SEL_BG),
+                    ("*Entry.selectForeground", C_TEXT),
+                    ("*Entry.insertBackground", C_TEXT),
+                    ("*Text.selectBackground", C_SEL_BG),
+                    # 全局 option（影响 Combobox 下拉等 tk 原生 popdown）
+                    ("*TCombobox*Listbox.background", C_CARD),
+                    ("*TCombobox*Listbox.foreground", C_TEXT),
+                    ("*TCombobox*Listbox.selectBackground", C_SEL_BG),
+                    ("*TCombobox*Listbox.selectForeground", C_TEXT),
+                    ("*TCombobox*Listbox.font", FONT_S),
+                    ("*Listbox.background", C_CARD),
+                    ("*Listbox.foreground", C_TEXT),
+                    ("*Listbox.selectBackground", C_SEL_BG),
+                    ("*Listbox.selectForeground", C_TEXT)):
+                self.root.option_add(_pat, _val)
+        except Exception:
+            pass
+
+    def _apply_style(self):
         st = ttk.Style()
         self.st = st          # v2.4.0：进度条完成脉冲需在动效帧里改 style
         # 'alt' 主题在跨平台都完全支持 background 颜色覆写（clam 在 Win 下对 TFrame/Status/Treeview 硬编码 native look）
@@ -2290,6 +2361,10 @@ class App:
         except Exception:
             self._fm_tree = None
         # v2.2.0：标题省略所需的同族同字号字体（Board.TLabel = FONT_BOARD）
+        # v2.5.5：必须带 -weight / -slant，否则"测出来的宽度"和"画出来的宽度"不是一回事。
+        #   FONT_BOARD = (fam, -26, "bold") → 渲染是粗体，测量字体却是常规体，
+        #   实测同一串 "MPG Z790 EDGE TI WIFI"：measure 299px / 实际 reqwidth 322px，
+        #   23px 的缺口足以让"测着放得下"的名字被 Treeview 式的硬切砍掉尾巴。
         self._fm_title = "boardMeasure"
         try:
             self.root.tk.call("font", "delete", self._fm_title)
@@ -2297,9 +2372,21 @@ class App:
             pass
         try:
             self.root.tk.call("font", "create", self._fm_title,
-                              "-family", FONT_BOARD[0], "-size", FONT_BOARD[1])
+                              "-family", FONT_BOARD[0], "-size", FONT_BOARD[1],
+                              "-weight", FONT_BOARD[2] if len(FONT_BOARD) > 2 else "normal")
         except Exception:
             self._fm_title = None
+        # v2.5.5：栏 2 footer 走等宽字体（FONT_MONO），时间戳要让路时得先量得准
+        self._fm_mono = "monoMeasure"
+        try:
+            self.root.tk.call("font", "delete", self._fm_mono)
+        except Exception:
+            pass
+        try:
+            self.root.tk.call("font", "create", self._fm_mono,
+                              "-family", FONT_MONO[0], "-size", FONT_MONO[1])
+        except Exception:
+            self._fm_mono = None
         # ---- 滚动条
         st.configure("Vertical.TScrollbar", background=C_SCROLL, troughcolor=C_TROUGH,
                      bordercolor=C_TROUGH, arrowcolor=C_SUB, borderwidth=0,
@@ -2365,6 +2452,7 @@ class App:
     _px_cache = None      # LRU：{文本: 像素宽}（条数上限 PX_CACHE_MAX）
     _fm_tree = None       # 测量用 Tcl 具名字体（与 Cat.Treeview 同族同字号）
     _fm_title = None      # 测量用 Tcl 具名字体（与主板标题 Board.TLabel 同族同字号）
+    _fm_mono = None       # 测量用 Tcl 具名字体（与栏 2 footer 的 FONT_MONO 同族同字号）
 
     # ------------------------------------------------------------- UI 布局
     def _build_ui(self):
@@ -2437,7 +2525,7 @@ class App:
     def _ui_header(self):
         """标题栏：左侧红色 logo 块 + 应用名；右侧设置按钮 + 版本/公司。"""
         # ---------- 标题栏
-        head = ttk.Frame(self._sky, padding=(S(20), S(16), S(20), S(8)))
+        head = ttk.Frame(self._sky, padding=(S(20), S(12), S(20), S(6)))
         head.pack(fill="x")
         logo = tk.Frame(head, bg=C_MSI_RED, width=S(10), height=S(28))
         logo.pack(side="left", padx=(S(0), S(12)))
@@ -2450,7 +2538,7 @@ class App:
         self.btn_settings = ttk.Button(hright, text="设置", width=6,
                                        command=self._open_settings)
         self.btn_settings.pack(side="right", padx=(S(16), S(0)))
-        ttk.Label(hright, text="v%s   |   %s" % (APP_VERSION, APP_COMPANY),
+        ttk.Label(hright, text="%s   |   %s" % (_ver_suffix(), APP_COMPANY),
                   style="Ver.TLabel").pack(side="right")
 
     def _ui_statusbar(self):
@@ -2467,15 +2555,9 @@ class App:
         self.lbl_status = tk.Label(sb, textvariable=self.v_status, font=FONT_S,
                                    bg=C_STATUS_BG, fg=C_STATUS_FG, anchor="w")
         self.lbl_status.pack(side="left")
-        # 右侧常驻：应用版本（+ DPI）。原来还带「数据源：x」—— 那个信息与栏 3 标题
-        # 行右侧的数据源徽章（lbl_host）**完全重复**，措辞还不一致（这里是
-        # 「数据源：中国站」、徽章是「数据源 中国站」）。v2.5.2 起数据源只由徽章
-        # 承担（它就贴在所描述的数据旁边），状态栏右读数只留版本与 DPI。
-        self.v_stat_right = tk.StringVar(value=_ver_suffix())
-        # v2.4.0：状态栏右读数换等宽。这里是 pack side=right，
-        # 左侧状态消息通常 200px 量级、容器 1160px，变宽也不挤压。
-        tk.Label(sb, textvariable=self.v_stat_right, font=FONT_MONO,
-                 bg=C_STATUS_BG, fg=C_DIM).pack(side="right")
+        # v2.5.5：右侧「v2.5.4」删掉了 —— 顶栏产品牌位已经写着同一个版本号，
+        # 同一屏出现两次不会让人更确定，只会让人怀疑"这两个是不是不一样"。
+        # 版本 + DPI 现在只由顶栏的 _ver_suffix() 承担。
 
     def _ui_actionbar(self):
         """底部工具条外壳：两行 grid —— 行 0 操作（`_ui_download_row` 填），行 1 进度（`_ui_progress_row` 填）。"""
@@ -2589,6 +2671,12 @@ class App:
                             stretch=False)
         self.cat_tree.grid(row=0, column=0, sticky="nsew")
         self.cat_tree.bind("<<TreeviewSelect>>", self._on_tree_select)
+        # v2.5.5：目录为空时的占位（旧版这里是一个空木框 + 底部一行小字，
+        # 首次启动那 1~3 秒看起来像"界面没做完"）。place 覆盖在树区域中央，
+        # 不占布局位，目录一填进来就 place_forget。
+        self._cat_ph = tk.Label(twrap, text="正在读取主板目录…", font=FONT_S,
+                                bg=C_CARD, fg=C_DIM)
+        self._cat_ph.place(relx=0.5, rely=0.32, anchor="center")
         # v2.2.0：记住手动展开的芯片组（重启后自动还原，常用芯片组不用每次重展）
         self.cat_tree.bind("<<TreeviewOpen>>", self._on_cat_open)
         self.cat_tree.bind("<<TreeviewClose>>", self._on_cat_open)
@@ -2647,15 +2735,25 @@ class App:
         # 放在这里。中栏 340px 横跨显示，比塞进 250px 的导航栏标题行宽裕得多。
         mfoot = ttk.Frame(mf, style="Card.TFrame")
         mfoot.grid(row=2, column=0, sticky="ew", pady=(S(8), S(0)))
-        ttk.Label(mfoot, textvariable=self.v_cat,
-                  style="MonoSub.TLabel").pack(side="left")
-        ttk.Label(mfoot, textvariable=self.v_cat_upd,
-                  style="MonoDim.TLabel").pack(side="right")
+        self._mfoot = mfoot
+        self._lbl_cat = ttk.Label(mfoot, textvariable=self.v_cat,
+                                  style="MonoSub.TLabel")
+        self._lbl_cat.pack(side="left")
+        self._lbl_cat_upd = ttk.Label(mfoot, textvariable=self.v_cat_upd,
+                                      style="MonoDim.TLabel")
+        self._lbl_cat_upd.pack(side="right")
+        # v2.5.5：窄窗下 footer 装不下两段文字时分级让路（见 _fit_mfoot）
+        mfoot.bind("<Configure>", self._fit_mfoot, add="+")
         mwrap.columnconfigure(0, weight=1)
         mwrap.rowconfigure(0, weight=1)
         self.board_tree = ttk.Treeview(mwrap, show="tree", selectmode="browse",
                                        height=16, style="Mod.Treeview")
         self.board_tree.grid(row=0, column=0, sticky="nsew")
+        # v2.5.5：型号列表空占位（目录还没读到 / 没选芯片组时给一句下一步）
+        self._board_ph = tk.Label(mwrap, text="正在读取主板目录…", font=FONT_S,
+                                  bg=C_CARD, fg=C_DIM,
+                                  wraplength=S(240), justify="center")
+        self._board_ph.place(relx=0.5, rely=0.28, anchor="center")
         _bsb = ttk.Scrollbar(mwrap, orient="vertical", command=self.board_tree.yview)
         self.board_tree.configure(yscrollcommand=_bsb.set)
         _bsb.grid(row=0, column=1, sticky="ns")
@@ -2678,10 +2776,15 @@ class App:
         # grow/_panel_note_box/list_holder 改为 pack 进 container 内部（顺序可控）。
         # orow 在 rf row=4、pbar 在 rf row=5 固定行，不受 list_holder 影响。
         rf.columnconfigure(0, weight=1)
-        rf.rowconfigure(2, weight=1)
-        # v2.5.0：列表吃全部剩余高度（weight=1），详情按内容自撑（weight=0 +
-        # minsize）—— 说明越长详情越高、列表相应让位，无需任何硬编码比例。
+        # v2.5.5：列表行不再吃剩余高度（原 weight=1）。改为按内容行数定高，
+        # 剩余高度交给卡片底部的弹性空行（row 7，无控件）。见 TV_ROWH 处注释。
+        rf.rowconfigure(2, weight=0)
+        # v2.5.0：详情按内容自撑（weight=0 + minsize）—— 说明越长详情越高，
+        # 无需任何硬编码比例。
         rf.rowconfigure(4, weight=0, minsize=S(RIGHT_DETAIL_MIN))
+        # 卡片底部的弹性空行：row 3 / 5 / 7 都没有控件，只靠 weight 吸收余量。
+        # 放在最后一行的原因：让所有内容顶部对齐，空白只出现在卡片最下方。
+        rf.rowconfigure(7, weight=1)
         # row 0: trow, row 1: brow, row 2: _list_zone (expand), row 3: 分隔线, row 4: drow, row 5: orow, row 6: pbar
         self._list_zone = ttk.Frame(rf, style="Card.TFrame")
         self._list_zone.grid(row=2, column=0, sticky="nsew", pady=(S(10), S(4)))
@@ -2712,6 +2815,8 @@ class App:
         self.lbl_host = tk.Label(self._right_box, text="", font=FONT_SS,
                                  bg=C_CARD, fg=C_DIM)
         self.lbl_host.pack(side="right", padx=(S(0), S(10)))
+        # v2.5.5：徽章也会让路（标题装不下时），见 _show_board_title 的三级顺序
+        self._host_hidden = False
         self.v_board_title = tk.StringVar(value="请先在左侧选择主板型号")
         # v2.2.0：标题超长时按可用宽度省略（见 _show_board_title / _fit_board_title），
         # 否则长型号名会把右侧「打开官网支持页」挤出可视区
@@ -2764,6 +2869,8 @@ class App:
         cols = ("ver", "date", "size", "note")
         self.tv = ttk.Treeview(self._list_holder, columns=cols, show="headings",
                                selectmode="browse", height=12)
+        self._tv_h = None          # 最近一次设定的可视行数（见 _fit_tv_height）
+        self._refit_tv_pending = False
         for cid, txt, w, anchor in (
                 ("ver", "版本", 168, "w"),
                 ("date", "发布日期", 110, "center"),
@@ -2777,6 +2884,8 @@ class App:
         # v2.2.0：列宽随容器宽度按比例分配。旧版四列写死 168/110/92/380（合计 750），
         # 窗口收到最小尺寸（1100）时右栏内宽只剩约 656px，「更新说明」挤到 286px。
         self._list_holder.bind("<Configure>", self._fit_tv_cols, add="+")
+        # v2.5.5：卡片高度变化时重算「放得下几行」（见 _fit_tv_height）
+        rf.bind("<Configure>", self._fit_tv_height, add="+")
         self.tv.bind("<Double-1>", lambda e: self._on_tv_double_click())
         # v2.4.0：行 hover 高亮 + 右键菜单
         self.tv.bind("<Motion>", self._on_tv_motion)
@@ -2819,25 +2928,29 @@ class App:
         self._det_meta.grid(row=0, column=1, sticky="w", padx=(S(10), S(0)))
         self._det_size = tk.Label(drow, text="", font=FONT_MONO, bg=C_INSET, fg=C_SUB)
         self._det_size.grid(row=0, column=2, sticky="w", padx=(S(12), S(0)))
+        # v2.5.5：详情槽不再放第二个红色主按钮。
+        # 原来这里「复制下载链接」(灰) + 「下载此版本」(红)，底部还有「下载选中版本」(红)
+        # —— 同屏两个红按钮，而它们下的是**同一个文件**（详情槽显示的就是选中行）。
+        # 红色预算按 v2.3.0 定下的规矩只给唯一主操作：底部那颗。这里降为次级灰按钮，
+        # 复制链接再降一档为文字链（与「打开官网支持页 ↗」同族）。
         self.btn_det_url = tk.Button(drow, text="复制下载链接", font=FONT_S,
-                                     bg=C_BTN, fg=C_TEXT,
-                                     activebackground=C_BTN_HOVER,
-                                     activeforeground=C_TEXT,
-                                     relief="solid", bd=S(1),
-                                     padx=S(12), pady=S(4), cursor="hand2",
+                                     bg=C_INSET, fg=C_BLUE,
+                                     activebackground=C_INSET,
+                                     activeforeground=C_ACCENT_HOT,
+                                     relief="flat", bd=0,
+                                     padx=S(10), pady=S(4), cursor="hand2",
                                      command=self._menu_copy_url)
         self.btn_det_url.grid(row=0, column=4, sticky="e")
         self.btn_det_dl = tk.Button(drow, text="下载此版本", font=FONT_S,
-                                    bg=C_ACCENT_BTN, fg="#ffffff",
-                                    activebackground=C_ACCENT_BTN_HOT,
-                                    activeforeground="#ffffff",
-                                    disabledforeground=C_ACCENT_BTN_FG_DIS,
-                                    relief="flat", bd=0,
+                                    bg=C_BTN, fg=C_TEXT,
+                                    activebackground=C_BTN_HOVER,
+                                    activeforeground=C_TEXT,
+                                    relief="solid", bd=S(1),
                                     padx=S(14), pady=S(4), cursor="hand2",
                                     command=self._on_download)
-        self.btn_det_dl.grid(row=0, column=5, sticky="e", padx=(S(8), S(0)))
-        self._bind_hover(self.btn_det_url, C_BTN, C_BTN_HOVER)
-        self._bind_hover(self.btn_det_dl, C_ACCENT_BTN, C_ACCENT_BTN_HOT)
+        self.btn_det_dl.grid(row=0, column=5, sticky="e", padx=(S(10), S(0)))
+        self._bind_hover_fg(self.btn_det_url, C_BLUE, C_ACCENT_HOT)
+        self._bind_hover(self.btn_det_dl, C_BTN, C_BTN_HOVER)
         # 行 1：更新说明（不截断，最多 DETAIL_MAX_LINES 行；超出以「…」收尾）
         self._det_note = tk.Label(self._detail_zone, text="", font=FONT_S,
                                   bg=C_INSET, fg=C_DIM, anchor="w",
@@ -2982,6 +3095,7 @@ class App:
                              width=S(60), height=S(PB_H),
                              bg=C_CARD, bd=0, highlightthickness=0)
         self.pb.pack(fill="x", side="left", expand=True)
+        self.pb.set_idle(True)     # v2.5.5：启动即隐形，见 PbarCanvas.set_idle
         self.v_pb = tk.StringVar(value="")
         # v2.4.0：width 30→46 —— 原 30 字符格装不下完整文案，被裁成「(4...」
         # v2.2.0：窄窗口自动压成短文案（见 _fit_progress_text / _dl_progress）
@@ -3017,6 +3131,11 @@ class App:
             pass
         # 启动即显示实际保存目录（旧版这里是空白，用户不知道文件会存到哪）
         self._set_dir_display(self._default_dir())
+        # v2.5.5：建完再同步一次主按钮状态。
+        # 详情槽（_ui_detail_zone）比底部工具条（_ui_download_row）先建，
+        # 它内部那次 _sync_dl_btn() 拿到的是"btn_dl 还不存在"，只会在日志里留一行；
+        # 这里补上首帧的启用态，否则空态下主按钮是亮红可点的。
+        self._sync_dl_btn()
 
     # ------------------------------------------------------------- 辅助
     def _set_status(self, msg, kind="info"):
@@ -3215,6 +3334,15 @@ class App:
         except Exception:
             pass
 
+    def _pb_settle(self):
+        """下载完成 1.4s 后收尾：配色复位 + 进度条收回（v2.5.5）。
+
+        先让用户看清 100% 那一帧，再收回去；顺序不能反 —— 反过来会看到
+        「满格突然变空」的跳变。
+        """
+        self._pb_color_reset()
+        self.pb.set_idle(True)
+
     def _pb_color_reset(self):
         try:
             if hasattr(self.pb, "set_fill"):
@@ -3402,6 +3530,7 @@ class App:
         if on:
             if self.tv.winfo_manager():
                 self.tv.pack_forget()
+            self._list_fill(True)      # v2.5.5：占位块吃满卡片
             if not self._empty_box.winfo_manager():
                 self._empty_box.pack(fill="both", expand=True)
             # 主动作按钮只在"还没选型号"时出现；加载中 / 已选型号但无数据时收起
@@ -3444,17 +3573,18 @@ class App:
                 self._show_board_title("请先在左侧选择主板型号")
                 self.v_board_sub.set("")
                 self.lbl_host.configure(text="")
-                self.v_stat_right.set(_ver_suffix())
                 self.cur_slug = None
                 self.cur_items = []
                 self._latest_iids = set()
                 self._ui_status("就绪 · 请在左侧选择一款主板型号", "info")
         else:
             self._stop_loading()
+            self._list_fill(False)     # v2.5.5：列表按行数定高，余量沉到卡片底部
             if self._empty_box.winfo_manager():
                 self._empty_box.pack_forget()
             if not self.tv.winfo_manager():
                 self.tv.pack(fill="both", expand=True)
+            self._sync_dl_btn()        # v2.5.5：回到空态/无选中时主按钮同步禁用
 
     def _set_inflight(self, delta):
         """在途任务计数（v2.2.0）：计数归零才解除主按钮禁用。
@@ -3466,15 +3596,15 @@ class App:
         self._busy(self._inflight > 0)
 
     def _busy(self, on):
-        """查询 / 下载中禁用主按钮（tk.Button 用 config(state=...) 切换）。"""
+        """查询 / 下载中禁用主按钮（tk.Button 用 config(state=...) 切换）。
+
+        v2.5.5：这里不再直接写配色，只维护「在途」标记，状态与文案统一由
+        `_sync_dl_btn()` 算 —— 否则"下载完解禁"会把"没选中"的禁用态又打开。
+        """
         # 先掐掉进行中的 hover 渐变：否则动画帧会把 disabled 底色覆盖回去
         self.anim.cancel(("hb", id(self.btn_dl)))
-        if on:
-            self.btn_dl.config(state=tk.DISABLED, bg=C_ACCENT_BTN_DIS,
-                               disabledforeground=C_ACCENT_BTN_FG_DIS)
-        else:
-            self.btn_dl.config(state=tk.NORMAL, bg=C_ACCENT_BTN,
-                               disabledforeground=C_ACCENT_BTN_FG_DIS)
+        self._busy_flag = bool(on)
+        self._sync_dl_btn()
 
     def _set_downloading(self, on):
         """下载态切换：主按钮禁用 + 显示「取消下载」；结束后隐藏并还原。"""
@@ -4078,6 +4208,132 @@ class App:
             need[cid] = w + pad
         return need
 
+    def _list_fill(self, on):
+        """列表区是否吃满卡片高度（v2.5.5）。
+
+        有数据时 false：列表按行数定高，余量交给卡片底部空行（row 7）。
+        空状态时 true：占位块本身没有内容高度，必须由列表行吸收，否则
+        「尚未选择主板型号」会挤在卡片顶部一条。
+        """
+        try:
+            self._rf.rowconfigure(2, weight=1 if on else 0)
+            self._rf.rowconfigure(7, weight=0 if on else 1)
+        except Exception as e:
+            _log("list fill err: %r" % (e,))
+
+    def _fit_mfoot(self, _ev=None):
+        """栏 2 footer：装不下时按「信息重要性」分级让路（v2.5.5）。
+
+        这一行是 `[共 N 款]  …（弹性）…  [目录: 2026-10-07 11:46]`。
+        旧版把右侧标签 pack 到右边就完事了：1180 最小窗下中栏只剩 353px，
+        右侧拿到比请求宽更窄的槽，被**硬切**成「目录：2026-10-」——
+        日期只显示到月份，读起来像目录时间戳解析失败。
+
+        让路阶梯（先牺牲最后一个）：
+          ① `目录: 2026-10-07 11:46`  完整 —— 宽裕时
+          ② `目录 2026-10-07`         丢掉时分 —— 中栏典型宽度
+          ③ `2026-10-07`              丢掉「目录」二字 —— 很窄
+          ④ 整块收掉                  再窄就连日期也不占位
+        计数（共 N 款 / 本节 N 款）永不参与让路：它回答「这里有多少东西」，
+        是这一栏的主读数；日期只是「数据有多新」。
+        """
+        try:
+            w = self._mfoot.winfo_width()
+            if w < S(60):
+                return
+            full = (self.cat_updated or "").strip()
+            if not full:
+                return
+            lw = self._lbl_cat.winfo_reqwidth()
+            gap = S(14)
+
+            def pw(s):
+                if not self._fm_mono or not s:
+                    return 0
+                return int(self.root.tk.call("font", "measure", self._fm_mono, s))
+
+            day = full.split(" ")[0]
+            text = ""
+            for cand in ("目录: %s" % full, "目录 %s" % day, day):
+                if lw + gap + pw(cand) <= w:
+                    text = cand
+                    break
+            if text:
+                if not self._lbl_cat_upd.winfo_manager():
+                    self._lbl_cat_upd.pack(side="right")
+                if self.v_cat_upd.get() != text:
+                    self.v_cat_upd.set(text)
+            elif self._lbl_cat_upd.winfo_manager():
+                # 降到第 ④ 级：不只是不显示，变量也一并清掉 ——
+                # 否则「变量里是完整串、屏幕上什么都没有」，调试和门禁读到的
+                # 都不是用户看到的东西（这个不一致本身就是个坑）。
+                # 宽回来时不丢信息：完整串的真源是 self.cat_updated。
+                self._lbl_cat_upd.pack_forget()
+                if self.v_cat_upd.get():
+                    self.v_cat_upd.set("")
+        except Exception as e:
+            _log("fit mfoot err: %r" % (e,))
+
+    def _fit_tv_height(self, _ev=None):
+        """BIOS 表高度按「数据行数」定，不再吃满卡片（v2.5.5）。
+
+        旧版列表行 weight=1：3 个版本时表格 368px，其中 278px 是空行（实测 75%），
+        而详情区被压到 126px 保底。空白在表格**内部**，读起来像「还没加载完」。
+
+        现在行数 = min(max(数据行数, TV_MIN_ROWS), TV_MAX_ROWS, 实际放得下的行数)，
+        详情紧跟其下，余量落到卡片底部。放得下的行数由本卡片**实际高度**反推 ——
+        不能用请求高度，否则窗外框一缩小就会把详情顶出可视区。
+
+        为什么不会形成布局反馈环：改的是 `tv` 的请求高，而 `rf` 的实际高由父容器
+        （body 行 0，weight=1，sticky=nsew）决定，不随子控件请求高变化。
+        """
+        try:
+            rf = self._rf
+            h = rf.winfo_height()
+            if h < S(240):            # 初次布局的中间态（1px），忽略
+                return
+            n_rows = len(self.tv.get_children())
+            trow_h = max(S(28), self._title_row.winfo_height())
+            det_h = max(S(RIGHT_DETAIL_MIN), self._detail_zone.winfo_reqheight())
+            # 表头实高 = Treeview 请求高 − 行数 × 行高（用上一次设定的行数反推）。
+            # 不能写死：表头高由字体 + 样式 padding 决定，不随 S() 线性缩放。
+            head_h = S(TV_HEAD_H)
+            if self._tv_h:
+                head_h = max(head_h,
+                             self.tv.winfo_reqheight() - self._tv_h * S(TV_ROWH))
+            # 可用高 = 卡片高 − 卡片内边距 − 标题行 − 列表区上下留白(10/4)
+            #          − 详情区 − 详情前留白(8) − 表头
+            avail = h - S(32) - trow_h - S(14) - det_h - S(8) - head_h
+            fit = int(avail // S(TV_ROWH))
+            rows = min(max(n_rows, TV_MIN_ROWS), TV_MAX_ROWS)
+            rows = max(1, min(rows, fit))
+            if rows != self._tv_h:
+                self._tv_h = rows
+                self.tv.configure(height=rows)
+        except Exception as e:
+            _log("fit tv height err: %r" % (e,))
+
+    def _refit_tv_soon(self):
+        """空闲时重算表高（详情区请求高变化后调用）。
+
+        为什么用 after_idle 而不是直接调：`_show_detail` 由 `<<TreeviewSelect>>`
+        触发，此时详情区的新内容刚 configure、换行高还没结算，直接测 reqheight
+        拿到的是**旧值**。after_idle 让几何结算先跑完；合并标志避免一次业务操作
+        里多次 set 造成连续重排。
+        """
+        if self._refit_tv_pending:
+            return
+        self._refit_tv_pending = True
+
+        def _go():
+            self._refit_tv_pending = False
+            self._fit_tv_height()
+
+        try:
+            self.root.after_idle(_go)
+        except Exception:
+            self._refit_tv_pending = False
+
     def _fit_tv_cols(self, _ev=None):
         """BIOS 表列宽：按**实测内容需求**分配（v2.5.0 重写）。
 
@@ -4167,31 +4423,65 @@ class App:
         except Exception as e:
             _log("sub slot visible err: %r" % (e,))
 
+    def _host_slot_width(self):
+        """数据源徽章的槽宽（含前方间距）；文本为空时视为 0。"""
+        try:
+            if not (self.lbl_host.cget("text") or "").strip():
+                return 0
+            return self.lbl_host.winfo_reqwidth() + S(10)
+        except Exception:
+            return 0
+
+    def _set_host_visible(self, on):
+        """显示/隐藏数据源徽章（v2.5.5：标题装不下时它是第二个让路的）。"""
+        if on == (not self._host_hidden):
+            return
+        try:
+            if on:
+                self.lbl_host.pack(side="right", padx=(S(0), S(10)),
+                                   after=self.btn_openpage)
+                self._host_hidden = False
+            else:
+                self.lbl_host.pack_forget()
+                self._host_hidden = True
+        except Exception as e:
+            _log("host slot visible err: %r" % (e,))
+
     def _show_board_title(self, text):
-        """设置型号标题：宽度不够时按优先级让路（v2.3.1）。
+        """设置型号标题：宽度不够时按优先级让路（v2.3.1，v2.5.5 改为三级）。
 
         让路顺序（先牺牲谁）：
           ① slug 副标题 —— 与标题高度重复（MPG-Z790-EDGE-TI-WIFI ↔ MPG Z790 EDGE TI WIFI）
-          ② 标题省略号 —— 主要信息，最后才动
-        数据源徽章不参与：它是不可替代的信息，被挤掉用户就不知道查的是哪个站了。
+          ② 数据源徽章 —— 只回答"读的是哪个站"，是能重建的辅助信息
+          ③ 标题省略号 —— 主信息，最后才动
 
-        v2.2.0 原有行为（`_ellipsize` 按可用宽度省略）完整保留，只是可用宽度里
-        多了"固定占用"（按钮 + 数据源徽章 + 间距）这一项。
+        v2.5.5 前的顺序是 ①→③，徽章"永不参与让路"。实测 1180 宽窗口下后果正好相反：
+        标题被砍成「MPG Z790 EDGE TI WI…」，而 138px 的徽章**一个像素都没让**。
+        主信息给辅助信息让路，是优先级写反了 —— 现在徽章也进让路队列。
         """
         self._title_full = text or ""
         try:
             roww = self._title_row.winfo_width()
-            fixed = (self.btn_openpage.winfo_reqwidth()
-                     + self.lbl_host.winfo_reqwidth() + S(16) + S(8))
             need = 0
             if self._fm_title:
                 need = int(self.root.tk.call("font", "measure", self._fm_title,
-                                             self._title_full))
+                                             self._title_full)) + S(TITLE_MEASURE_SLACK)
+            btn_w = self.btn_openpage.winfo_reqwidth() + S(8)
+            host_w = self._host_slot_width()
             subw = self._sub_slot_width()
             # 副标题只在"扣掉它之后标题仍然放得下"时才留
-            want_sub = bool(need) and (roww - fixed - subw) >= need
+            want_sub = bool(need) and (roww - btn_w - host_w - subw) >= need
             self._set_sub_visible(want_sub)
-            avail = roww - fixed - (subw if want_sub else 0)
+            avail = roww - btn_w - host_w - (subw if want_sub else 0)
+            # ② 徽章让路：只有"标题确实装不下"时才收，装得下就一直留着
+            want_host = True
+            if need and avail < need and host_w:
+                want_host = False
+                avail = roww - btn_w - (subw if want_sub else 0)
+            self._set_host_visible(want_host)
+            if need and avail >= need:
+                self.v_board_title.set(self._title_full)
+                return
             if avail >= S(80) and self._fm_title:
                 self.v_board_title.set(
                     _ellipsize(self._title_full, avail, self._fm_title, self.root))
@@ -4709,6 +4999,28 @@ class App:
     # v2.5.0：旧名保留为别名（外部探针与旧调用点仍用 _auto_fit_cat）
     _auto_fit_cat = _auto_fit_cols
 
+    def _cat_ph_set(self, text):
+        """栏 1 空列表占位（v2.5.5）：text 为空即隐藏。"""
+        try:
+            if text:
+                self._cat_ph.configure(text=text)
+                self._cat_ph.place(relx=0.5, rely=0.32, anchor="center")
+            else:
+                self._cat_ph.place_forget()
+        except Exception as e:
+            _log("cat placeholder err: %r" % (e,))
+
+    def _board_ph_set(self, text):
+        """栏 2 空列表占位（v2.5.5）：text 为空即隐藏。"""
+        try:
+            if text:
+                self._board_ph.configure(text=text)
+                self._board_ph.place(relx=0.5, rely=0.28, anchor="center")
+            else:
+                self._board_ph.place_forget()
+        except Exception as e:
+            _log("board placeholder err: %r" % (e,))
+
     def _populate_tree(self):
         """按当前设置（平台 / 芯片组过滤）+ 搜索词重建左侧主板目录树。
 
@@ -4729,6 +5041,8 @@ class App:
         # v2.3.5 防护：目录尚未加载（None / 缺 brands）时清空树并提示，避免 .get 崩溃
         if not self.catalog or not self.catalog.get("brands"):
             self.v_cat.set("目录加载中…")
+            self._cat_ph_set("正在读取主板目录…")
+            self._board_ph_set("目录就绪后\n这里会列出型号")
             return
         n_vis = 0
         first_iid = None
@@ -4772,14 +5086,18 @@ class App:
         total_all = self.catalog.get("total", 0)
         if n_vis == 0:
             self.v_cat.set("0 款")
+            self._cat_ph_set("没有匹配的型号" if q else "没有可显示的型号")
             if not q:
                 self._set_status("当前设置下没有可显示的型号，请点右上角「设置」调整范围", "warn")
         elif q:
             self.v_cat.set("命中 %d 款" % n_vis)
+            self._cat_ph_set("")
         elif n_vis == total_all:
             self.v_cat.set("共 %d 款" % n_vis)
+            self._cat_ph_set("")
         else:
             self.v_cat.set("%d / %d 款" % (n_vis, total_all))
+            self._cat_ph_set("")
         # 搜索无命中 -> 显示「去官网搜索」出口
         try:
             if q and not n_vis:
@@ -4792,7 +5110,12 @@ class App:
         if self.cat_updated:
             # v2.5.0：栏 1 变窄后「目录更新: 」前缀把时间戳挤出卡片（实测被裁成
             # "…12:4("）。缩短为「目录」，时间戳完整可见。
+            # v2.5.5：宽度不够时 _fit_mfoot 会把它继续降级（丢时分 → 丢前缀 → 收掉）
             self.v_cat_upd.set("目录: %s" % self.cat_updated)
+            try:
+                self.root.after_idle(self._fit_mfoot)
+            except Exception:
+                pass
         # v2.5.0：选中导航栏里含当前型号的芯片组 → 刷新栏 2（型号）
         pick = self._nav_iid_of_slug(self.cur_slug) or first_iid
         if pick:
@@ -4859,13 +5182,18 @@ class App:
         if not hit:
             self._current_chip = (None, [])
             self.v_board_n.set("—")
+            self._board_ph_set("从左侧选择一个芯片组")
             return
         cs, boards = hit
         self._current_chip = (cs.get("name"), boards)
+        self._board_ph_set("")
         for bd in boards:
             iid = self.board_tree.insert("", "end", text=bd["title"])
             self.iid_board[iid] = (bd["slug"], bd["title"])
-        self.v_board_n.set("%d 款" % len(boards))
+        # v2.5.5：加上「本节」二字 —— 这个数是**当前芯片组**下的型号数，底部 footer
+        # 的「共 501 款」是**全库**数量。两个数字并排出现却不说明口径，读者只会困惑
+        # 「到底有多少款」。
+        self.v_board_n.set("本节 %d 款" % len(boards))
         for iid, (s, _t) in self.iid_board.items():
             if s and s == self.cur_slug:
                 self.board_tree.selection_set(iid)
@@ -4879,7 +5207,12 @@ class App:
             w = self._mf.winfo_width()
             if w < S(80):
                 return
-            col = max(S(CAT_TREE_MIN), w - S(CAT_CARD_OVER))
+            # v2.5.5：下限从 CAT_TREE_MIN(220) 降到 120。
+            # 旧写法 col = max(220, w-60)：窗口缩到 1180 时卡片只剩约 193px，
+            # 列宽却被撑在 220 —— Tk 会**夹住**列宽并按控件宽度硬切文本，
+            # 而 _ellipsize_board 仍按 220 算可用宽，于是"算得下"的名字被切掉尾巴、
+            # 连省略号都没有。现在列宽跟着卡片走，省略才有意义。
+            col = max(S(120), w - S(CAT_CARD_OVER))
             if str(self.board_tree.column("#0", "width")) != str(col):
                 self.board_tree.column("#0", width=col)
             if str(self.board_tree.column("#0", "minwidth")) != str(col):
@@ -4893,9 +5226,16 @@ class App:
 
         完整名一直保留在 self.iid_board[iid] 里（tooltip 与后续下载都用它），
         这里只改**显示文本** —— 所以不会影响任何功能。
+
+        v2.5.5：可用宽取「列宽」与「控件实测宽」的**较小值**。列宽带 minwidth，
+        控件宽度却可以被父容器压得更小；只用列宽算会高估可用宽，结果是文本刚好
+        超出可视区、被 Tk 硬切掉尾部而又没走到省略分支（1180 宽窗口下的实测现象）。
         """
         try:
             colw = int(self.board_tree.column("#0", "width"))
+            vis = int(self.board_tree.winfo_width())
+            if vis > 1:
+                colw = min(colw, vis)
             avail = colw - S(CELL_PAD_X + CAT_TREE_PAD)
             if avail < S(40):
                 return
@@ -5010,7 +5350,6 @@ class App:
         self.v_board_sub.set(slug)
         self.lbl_host.configure(text="")
         self._show_board_title(title)
-        self.v_stat_right.set(_ver_suffix())
         # v2.4.0：立刻切到「查询中」加载态（旧版右侧一片空白，只有状态栏一行字）
         self.groups = {}
         self.badges = []
@@ -5084,11 +5423,35 @@ class App:
             if self.grow.winfo_manager():
                 self.grow.pack_forget()
             # v2.3.5：显示占位并保留型号标题/slug（仍可点「打开官网支持页」核实）
-            self._show_empty(True, title=title, sub=err or "暂无可用 BIOS 数据", keep_title=True)
+            # v2.5.5：占位里不再重复型号名 —— 标题区已经写着它了，同一张卡里
+            # 上下一模一样的两个大字读起来像渲染出错。占位改说「结论 + 下一步」。
+            self._show_empty(
+                True, title="查询失败",
+                sub=err or "没拿到该型号的 BIOS 列表。可点右上角「打开官网支持页」核实。",
+                keep_title=True)
             self._set_status(err or "查询失败", "err")
             return
         self.groups = groups
         self.badges = list(groups.keys())
+        # v2.5.5：官网页可能返回 downloads 有内容、但里面没有任何 BIOS 分组
+        # （只剩驱动 / os 字段时 parse_bios_groups 得到 {}，注意**不是 None**）。
+        # 旧代码下面直接 self.badges[0] → IndexError → 被 _dispatch 的 except 吞掉，
+        # 界面永久停在"查询中"：不报错、不恢复、日志里只有一行 dispatch err。
+        if not self.badges:
+            self.cur_items = []
+            self._latest_iids = set()
+            self._iid_item = {}
+            self.tv.delete(*self.tv.get_children())
+            self.cur_badge = None
+            if self.grow.winfo_manager():
+                self.grow.pack_forget()
+            self._show_board_title(title)
+            self._show_empty(
+                True, title="暂无可用 BIOS 数据",
+                sub="官网该型号页面下没有公开的 BIOS 下载（当前数据源：%s）。" % host_txt,
+                keep_title=True)
+            self._set_status("暂无可用 BIOS 数据（数据源：%s）" % host_txt, "warn")
+            return
         # 多分组才显示类型下拉
         if len(self.badges) > 1:
             self.grp_box["values"] = ["%s（%d 项）" % (b, len(groups[b])) for b in self.badges]
@@ -5153,6 +5516,7 @@ class App:
             first = self.tv.get_children()[0]
             self.tv.selection_set(first)
             self.tv.focus(first)
+            self._fit_tv_height()       # v2.5.5：行数变了，重算可视行数
         else:
             self._show_empty(True)
 
@@ -5201,6 +5565,63 @@ class App:
         except Exception as _e:
             _log("detail wrap err: %r" % (_e,))
 
+    def _det_btns_enabled(self, on):
+        """详情槽两个控件的启用态与配色（v2.5.5）。
+
+        tk.Button 把 state 设成 disabled 时**不会**自动改底色 —— 旧版详情槽在空状态下
+        只是 `state="disabled"`，按钮仍是满血亮红，与底部真正可用的主按钮长得一模一样，
+        点下去毫无反应。这里把禁用态显式压暗（底 C_BTN_DIS + 字 C_DIM）。
+        """
+        on = bool(on)
+        try:
+            self.btn_det_dl.configure(
+                state=tk.NORMAL if on else tk.DISABLED,
+                bg=C_BTN if on else C_BTN_DIS,
+                fg=C_TEXT if on else C_DIM,
+                activebackground=C_BTN_HOVER if on else C_BTN_DIS)
+        except Exception as e:
+            _log("det dl btn state err: %r" % (e,))
+        try:
+            self.btn_det_url.configure(
+                state=tk.NORMAL if on else tk.DISABLED,
+                fg=C_BLUE if on else C_DIM,
+                disabledforeground=C_DIM)
+        except Exception as e:
+            _log("det url btn state err: %r" % (e,))
+
+    def _sync_dl_btn(self):
+        """底部主按钮的文案与启用态（v2.5.5）。
+
+        文案跟着选中版本走：旧版恒为「下载选中版本」，与详情槽的「下载此版本」并排时
+        用户没法判断两者的区别 —— 它们下的是同一个文件。现在主按钮直接写出版本号
+        （「下载 7D89v1C2」），"选中版本"这个词就不需要再解释了。
+
+        无选中 / 无下载链接 / 查询或下载在途 → 禁用，并把底色压暗一档。
+        唯一写入口是这里，`_busy()` 只负责改 `_busy_flag` 再转调 —— 两处各写一套
+        配色是"状态互相覆盖"的老来源。
+        """
+        try:
+            # 建窗过程中 _show_empty(False) 可能早于 _ui_download_row 触发，
+            # 此时 btn_dl 还不存在。这不是错误，是一个合法的中间态：
+            # 控件没建好时同步没有意义，_ui_finish 末尾会补一次终态同步。
+            # 不加这个守卫的话，每次启动都会往日志里写一行
+            # "sync dl btn err: AttributeError(...)" —— 被 except 吞掉不影响
+            # 运行，但天天写一次会把真错误淹掉（实测冒烟日志里就有这一行）。
+            if not hasattr(self, "btn_dl") or self.btn_dl is None:
+                return
+            busy = bool(self._busy_flag) or self._inflight > 0
+            it = None if busy else self._selected_item()
+            ver = clean_version((it or {}).get("download_version"))
+            ok = bool(it) and bool(it.get("download_url"))
+            text = ("下载 %s" % ver) if (ok and ver) else "下载选中版本"
+            if self.btn_dl.cget("text") != text:
+                self.btn_dl.configure(text=text)
+            self.btn_dl.configure(state=tk.NORMAL if ok else tk.DISABLED,
+                                  bg=C_ACCENT_BTN if ok else C_ACCENT_BTN_DIS,
+                                  disabledforeground=C_ACCENT_BTN_FG_DIS)
+        except Exception as e:
+            _log("sync dl btn err: %r" % (e,))
+
     def _show_detail(self, it):
         """把选中版本摊平显示在栏 3 底部详情面板；it 为 None 时显示引导占位。"""
         try:
@@ -5213,8 +5634,8 @@ class App:
                     text="在上方列表里选中一个 BIOS 版本，"
                          "这里会显示它的完整更新说明与 SHA-256 校验值。")
                 self._det_sha.configure(text="")
-                for _b in (self.btn_det_url, self.btn_det_dl):
-                    _b.configure(state="disabled")
+                self._det_btns_enabled(False)
+                self._sync_dl_btn()
                 return
             # 是不是「最新」那一版（与列表里的 ★ 前缀同源：_load_badge 里 i == 0）
             is_latest = False
@@ -5247,11 +5668,14 @@ class App:
             self._det_sha.configure(
                 text=("SHA-256: %s" % sha) if sha else "SHA-256: 官网未提供")
             has_url = bool(it.get("download_url"))
-            self.btn_det_url.configure(state="normal" if has_url else "disabled")
             # 下载中禁用「下载此版本」，与主按钮保持一致
             busy = bool(self.dl_thread and self.dl_thread.is_alive())
-            self.btn_det_dl.configure(
-                state=("disabled" if (busy or not has_url) else "normal"))
+            self._det_btns_enabled(has_url and not busy)
+            self._sync_dl_btn()
+            # v2.5.5：说明文字换行数变了 → 详情区请求高变了 → 「放得下几行」也要跟着变。
+            # 旧版只在卡片 <Configure> 时重算，切换选中项不会触发，于是表高停留在
+            # 上一次算出的值：长说明撑高详情区后，详情区底部会被顶出卡片（实测 11px）。
+            self._refit_tv_soon()
         except Exception as _e:
             _log("show detail err: %r" % (_e,))
 
@@ -5295,6 +5719,7 @@ class App:
         # v2.4.0：复位进度条配色 / 测速状态 / 旧横幅
         self._toast_hide()
         self._pb_color_reset()
+        self.pb.set_idle(False)        # v2.5.5：让隐形的进度条显形
         self._dl_speed = None
         self._dl_last_t = None
         self._dl_last_b = 0
@@ -5331,6 +5756,8 @@ class App:
             self.q.put(("dl_done", (False, dest, repr(e)[:200], None, expect_sha)))
 
     def _dl_progress(self, done, total):
+        # v2.5.5：进度条空闲时是"隐形"的（槽画成卡片底色），开跑第一帧要让它显形
+        self.pb.set_idle(False)
         # v2.4.0：速度 EMA + 剩余时间（旧版只有「已下载 / 总量」两个数字）
         now = time.monotonic()
         if self._dl_last_t is None:
@@ -5374,10 +5801,12 @@ class App:
                 self._set_status("已取消下载（已保留断点，可再次点击继续）", "warn")
                 self._toast_show("已取消下载 · 已保留断点，可续传", ok=False, ttl=6000)
                 self.v_pb.set("")
+                self.pb.set_idle(True)     # v2.5.5：取消后收回进度条
                 return
             self._set_status("下载失败：%s" % err, "err")
             self._toast_show("下载失败：%s" % err, ok=False, ttl=12000)
             self.v_pb.set("")
+            self.pb.set_idle(True)
             messagebox.showerror(
                 APP_TITLE,
                 "下载失败：%s\n\n已下载的部分已保留，再次点击下载将从断点续传。" % err,
@@ -5404,7 +5833,7 @@ class App:
         # 弹窗关闭后再播完成动效，避免动画被模态窗口挡住
         self._pb_flash(C_ACCENT, C_OK)
         self._status_flash(C_OK)
-        self.root.after(1400, self._pb_color_reset)
+        self.root.after(1400, self._pb_settle)
 
     def _on_cancel_download(self):
         """取消进行中的下载：置位 dl_cancel，下载线程轮询到后保留 .part 并回报。

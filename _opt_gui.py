@@ -97,9 +97,32 @@ app._set_inflight(-1)
 ck(str(app.btn_dl.cget("state")) == "disabled",
    "其中一条结束（旧版布尔会在这里就解禁）→ 仍禁用")
 app._set_inflight(-1)
-ck(str(app.btn_dl.cget("state")) == "normal", "全部结束才解禁")
+# v2.5.5：主按钮的解禁条件除了「无在途」还要求「有选中且有下载链接」
+# （文案也跟着版本号走，见 _sync_dl_btn）。旧版只切 state，空选状态下也会
+# 解禁成可点 —— 点下去弹「请先选择版本」，是个假可用态。
+ck(str(app.btn_dl.cget("state")) == "disabled",
+   "全部结束后无选中 → 仍禁用（v2.5.5：不再出现假可用态）")
 app._set_inflight(-1)
 ck(app._inflight == 0, "计数不会变成负数")
+
+print("\n=== [1b] 主按钮：有选中才解禁，文案带版本号 ===")
+_FAKE_IT = {"download_version": "7D89v1C2", "download_url": "https://x/y.zip"}
+app._iid_item["_probe"] = _FAKE_IT
+app.tv.insert("", "end", iid="_probe", values=("7D89v1C2", "2026-09-18", "34.0 MB", "probe"))
+app.tv.selection_set("_probe")
+pump(root)
+ck(str(app.btn_dl.cget("state")) == "normal", "选中带下载链接的版本 → 解禁")
+ck("7D89v1C2" in str(app.btn_dl.cget("text")),
+   "主按钮文案带版本号（%r）" % (app.btn_dl.cget("text"),))
+ck(str(app.btn_dl.cget("bg")).lower() == m.C_ACCENT_BTN.lower(),
+   "可用态底色为主按钮红")
+app._set_inflight(1)
+ck(str(app.btn_dl.cget("state")) == "disabled", "重新有在途 → 立刻禁用")
+app._set_inflight(-1)
+ck(str(app.btn_dl.cget("state")) == "normal", "在途结束后恢复")
+app.tv.selection_remove("_probe")
+pump(root)
+ck(str(app.btn_dl.cget("state")) == "disabled", "取消选中 → 禁用")
 
 print("\n=== [2] 目录抓取去重（4 个入口统一）===")
 calls = []
