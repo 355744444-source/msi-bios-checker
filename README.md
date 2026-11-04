@@ -45,14 +45,14 @@ python -m PyInstaller msi_bios_checker.spec --noconfirm
 仓库内 `_p_*.py` / `_opt_*.py` 是历次改动的**实测门禁**（布局几何、字体渲染、按钮间距、空状态结构等），`_gate_all.py` 一键跑全部：
 
 ```bash
-python _gate_all.py        # 15 项
+python _gate_all.py        # 16 项
 ```
 
 门禁以「真实 Tk 窗口 + 实测像素」为准，而非肉眼判断 —— 每项都附带**负向对照**（把修复回退，断言必须报红），避免写出恒真式。
 
 ## 技术要点
 
-- **绕过 Akamai 防护**：官网由 Akamai 保护，普通 `urllib` / `requests` 会 403；本项目用 `curl_cffi` 的 `impersonate="chrome124"` 伪造 Chrome TLS 指纹
+- **绕过 Akamai 防护**：官网由 Akamai 保护，普通 `urllib` / `requests` 会 403；本项目用 `curl_cffi` 伪造 Chrome TLS 指纹。**v2.5.6 起不再写死单只指纹** —— Akamai 会把某个指纹（如 `chrome124`）整只拉黑，之后它的所有请求稳定 403；现改为六只候选池 + 健康记忆，403 即换下一只，全球站整体不可达时自动降级中国站（`msi.cn`）
 - **走官方 API 而非爬 HTML**：`getProductTagList` / `getProductList` / `support/panel?type=bios`
 - **Tk 布局的坑**：`pack` 按调用顺序分配空间（`side="right"` 不是优先级）；`<Configure>` 不因内容变化而触发；`font measure` ≠ `winfo_reqwidth()`；`tk_setPalette` 会反向污染已存在控件
 
@@ -61,7 +61,7 @@ python _gate_all.py        # 15 项
 | 文件 | 内容 |
 |---|---|
 | [CHANGELOG.md](CHANGELOG.md) | 全版本变更记录（含每处修复的实测数据） |
-| [UI交互设计规范_v2.5.5.md](UI交互设计规范_v2.5.5.md) | 配色 / 字体 / 间距 / 让路优先级 / 门禁方法论 |
+| [UI交互设计规范_v2.5.6.md](UI交互设计规范_v2.5.6.md) | 配色 / 字体 / 间距 / 让路优先级 / 门禁方法论 |
 | [README.txt](README.txt) | 完整功能说明与历史沿革 |
 
 ## 许可证

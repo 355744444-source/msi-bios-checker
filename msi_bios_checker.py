@@ -313,7 +313,10 @@
 
 技术要点：
   * 官网由 Akamai CDN 防护，普通 urllib/requests 会被 403/拦截，
-    故网络层使用 curl_cffi 模拟 Chrome TLS 指纹（impersonate="chrome124"）。
+    故网络层使用 curl_cffi 模拟 Chrome TLS 指纹。
+  * v2.5.6 起不再写死单一指纹：Akamai 会把某个指纹（如 chrome124）整只拉黑，
+    之后该指纹的**所有**请求稳定 403。现改为指纹池 + 健康记忆，403 即换下一只；
+    全球站整体不可达时自动降级中国站（msi.cn，Tengine，接口同构）。
   * 数据接口（官网前端同款）：
       GET /api/v1/product/getProductTagList?product_line=mb       -> 芯片组分类
       GET /api/v1/product/getProductList?product_line=mb&id[]=..  -> 按芯片组的型号列表
@@ -340,7 +343,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
 APP_TITLE = "微星主板 BIOS 下载工具"
-APP_VERSION = "2.5.5"
+APP_VERSION = "2.5.6"
 APP_COMPANY = "江苏振远智能科技有限公司"
 
 # ---------------------------------------------------------------- 常量
@@ -357,7 +360,43 @@ CN_PL_LIST = (CN_BASE + "/api/v1/product/getProductList?product_line=mb"
               "&page_number=1&page_size=500&sort=1")
 CN_API_PANEL = CN_BASE + "/api/v1/product/support/panel?product={slug}&type={dtype}"
 
-IMPERSONATE = "chrome124"
+CN_API_PL_TAG = CN_BASE + "/api/v1/product/getProductTagList?product_line=mb"
+
+# ---- v2.5.6 指纹池 + 健康记忆
+# 2026-11-04 实测：Akamai 已把 chrome124 的 TLS/JA3 指纹列入黑名单 ——
+# www.msi.com 的三个 API 全部返回 403 "Access Denied"，同一指纹连打 3 次全 403；
+# 而 chrome120 / chrome142 / chrome152 / safari180 / firefox135 均 200。
+# 写死单一指纹意味着上游一改名单，工具就整体不可用（v2.5.5 的故障就是这个）。
+# 改为候选池：403/429/503 视为「这个指纹已被判定为机器人」，记一次失败并立刻换下一个；
+# 成功的那只记为首选（_IMP_BEST），后续请求粘住它，避免每个请求都从队首试错。
+IMPERSONATE_POOL = ("chrome142", "chrome131", "safari180", "firefox135",
+                    "chrome120", "chrome152", "chrome124")
+IMPERSONATE = IMPERSONATE_POOL[0]      # 兼容单次请求（下载 / 中国站补全）
+_BLOCK_CODES = (403, 429, 503)         # 机器人判定 / 限流 / 源站保护
+COM_COOLDOWN = 300                     # 全球站整体被拦后的冷却期（秒），期间直接走中国站
+_IMP_FAILS = {}
+_IMP_BEST = None
+
+
+def _imp_order():
+    """按健康度排序的指纹：上次成功的排首位，同一指纹失败越多越靠后。"""
+    pool = list(IMPERSONATE_POOL)
+    if _IMP_BEST in pool:
+        pool.remove(_IMP_BEST)
+        pool.insert(0, _IMP_BEST)
+    return tuple(sorted(pool, key=lambda x: _IMP_FAILS.get(x, 0)))
+
+
+def _imp_mark(imp, ok):
+    """记录指纹被拦/成功：成功清零并设为首选，失败累加（下次排到后面）。"""
+    global _IMP_BEST
+    if ok:
+        _IMP_FAILS.pop(imp, None)
+        _IMP_BEST = imp
+    else:
+        _IMP_FAILS[imp] = _IMP_FAILS.get(imp, 0) + 1
+
+
 # DNS 自愈（v2.3.3）：系统 DNS 无法解析官网域名（路由器/运营商递归 DNS 偶发故障，curl error 6/28）时，
 # 自动改用 DoH 兜底 —— IP 直连不依赖系统 DNS。国内可直连的两个 DoH 服务，依次尝试。
 DOH_URLS = ("https://223.5.5.5/dns-query",    # 阿里公共 DNS（RFC 8484）
@@ -1376,50 +1415,119 @@ class MsiApi:
     def __init__(self):
         from curl_cffi import requests as cr
         self._cr = cr
-        self._sess = cr.Session(impersonate=IMPERSONATE, timeout=(15, 60))
+        # v2.5.6：每个指纹一只会话（懒建）。指纹被拦时只丢弃那一只，
+        # 其它指纹的 cookie 不受影响。
+        self._sessions = {}
         # curl_cffi Session 非线程安全；所有请求加锁串行化
         self._lock = threading.Lock()
+        # v2.5.6：全球站整体被拦后的冷却截止时间。指纹池全灭说明不是单只指纹
+        # 的问题（Akamai 已按 IP/ASN 拦），继续对 com 打只会每次白等 7 个 403，
+        # 冷却期内直接走中国站；到点再探一次 com。
+        self._com_block_until = 0.0
 
-    def _get_json(self, url, retry=2):
-        """GET JSON；v2.3.3 起带 DNS 自愈：系统 DNS 解析失败时自动改用 DoH 兜底重试。
-        尝试序列：普通请求 retry 次 →（若为 DNS 错误）按健康度依次 DoH 再试。
-        v2.2.0：DoH 走健康排序并回写结果；退避改为带抖动的有上限延时。"""
-        last = None
-        last_dns = False
+    def _com_cooling(self):
+        return time.time() < self._com_block_until
+
+    def _session(self, imp):
+        """取（或建）指定指纹的会话；该 curl_cffi 版本不认识这个指纹时返回 None。"""
+        s = self._sessions.get(imp)
+        if s is not None:
+            return s
+        try:
+            s = self._cr.Session(impersonate=imp, timeout=(15, 60))
+        except Exception as e:
+            _log("指纹 %s 在本机 curl_cffi 上不可用：%r" % (imp, e))
+            return None
+        self._sessions[imp] = s
+        return s
+
+    @staticmethod
+    def _headers(url):
         is_cn = url.startswith(CN_BASE)
-        hdrs = {"User-Agent": UA_CHROME,
+        return {"User-Agent": UA_CHROME,
                 "Accept": "application/json,text/plain,*/*",
                 "Accept-Language": "zh-CN,zh;q=0.9" if is_cn else "en-US,en;q=0.9",
                 "Referer": (CN_BASE + "/") if is_cn else (BASE + "/")}
-        dohs = _doh_order()
-        n = retry + len(dohs)
-        for i in range(n):
-            if i >= retry and not last_dns:
-                break                 # 普通重试次数耗尽且并非 DNS 错误 → 不再多试
-            doh = dohs[i - retry] if i >= retry else None
-            with self._lock:
-                try:
-                    r = self._sess.get(url, headers=hdrs, doh_url=doh)
-                    if r.status_code == 200:
-                        if doh is not None:
-                            _doh_mark(doh, True)
+
+    def _get_dns_safe(self, sess, url, hdrs):
+        """单个指纹下取一次：系统 DNS 优先，解析失败时按健康度依次走 DoH。
+
+        返回 (response, None) 或 (None, exc)。非 DNS 异常直接返回，由上层判断
+        是「换指纹」还是「退避重试」。
+        """
+        chain = (None,) + _doh_order()
+        last = None
+        for i, doh in enumerate(chain):
+            try:
+                if doh is None:
+                    return sess.get(url, headers=hdrs), None
+                return sess.get(url, headers=hdrs, doh_url=doh), None
+            except Exception as e:
+                last = e
+                if not _is_dns_error(e):
+                    return None, e
+                if doh is not None:
+                    _doh_mark(doh, False)
+                if i < len(chain) - 1:
+                    time.sleep(_backoff_delay(i, 0.6))
+        return None, last
+
+    def _get_json(self, url, retry=2):
+        """GET JSON。
+
+        v2.5.6：**按指纹池逐个尝试**。旧版全程只有一个 chrome124 会话，上游把
+        这个 TLS 指纹判定为机器人后，所有请求稳定 403 —— 靠"同指纹重试"永远
+        救不回来，只是把同一个 403 打三遍再报错。现在的分层判断是：
+
+          403 / 429 / 503 -> 指纹被拦：记一次失败，立刻换下一个指纹（新证据）
+          超时 / 连接复位 -> 抖动：同一指纹按带抖动的退避重试（retry 次）
+          DNS 解析失败   -> 该指纹内走 DoH 兜底链；全灭则直接上抛（换指纹没用）
+
+        全部指纹都被拦时抛出 RuntimeError("请求失败: HTTP 403")，由 fetch_catalog
+        决定是否降级到中国站。
+        """
+        hdrs = self._headers(url)
+        is_com = url.startswith(BASE)
+        if is_com and self._com_cooling():
+            # 冷却期内不再打全球站：请求会稳定 403，徒增等待
+            raise RuntimeError("请求失败: HTTP 403（全球站冷却中，改走中国站）")
+        last = None
+        for imp in _imp_order():
+            sess = self._session(imp)
+            if sess is None:
+                continue
+            for k in range(retry):
+                with self._lock:
+                    r, err = self._get_dns_safe(sess, url, hdrs)
+                if err is not None:
+                    if _is_dns_error(err):
+                        raise RuntimeError(
+                            "网络 DNS 解析官网失败（已自动尝试备用解析仍不通）：%r" % (err,))
+                    last = repr(err)[:160]
+                    break                 # 连接类异常 -> 换指纹再试
+                if r.status_code == 200:
+                    _imp_mark(imp, True)
+                    try:
                         return r.json()
-                    last = "HTTP %s" % r.status_code
-                    last_dns = False      # 服务器有响应 → 不是解析问题，DoH 不算失败
-                except Exception as e:
-                    last = repr(e)[:160]
-                    last_dns = _is_dns_error(e)
-                    if last_dns and doh is not None:
-                        _doh_mark(doh, False)
-            if i < n - 1:
-                time.sleep(_backoff_delay(i))
-        if last_dns:
-            raise RuntimeError("网络 DNS 解析官网失败（已自动尝试备用解析仍不通）：%s" % last)
+                    except Exception as e:
+                        last = "响应不是合法 JSON（%r）" % (e,)
+                        break
+                last = "HTTP %s" % r.status_code
+                if r.status_code in _BLOCK_CODES:
+                    _imp_mark(imp, False)
+                    _log("指纹 %s 被官网拒绝（HTTP %s），自动换下一个指纹"
+                         % (imp, r.status_code))
+                    break                 # 换指纹，不重试同一个（403 不是抖动）
+                time.sleep(_backoff_delay(k))
+        if is_com and last and any(("HTTP %d" % c) in last for c in _BLOCK_CODES):
+            self._com_block_until = time.time() + COM_COOLDOWN
+            _log("全球站全部指纹被拦（%s），%d 秒内直接走中国站" % (last, COM_COOLDOWN))
         raise RuntimeError("请求失败: %s" % last)
 
     # ---------------- 芯片组分类（getProductTagList, type=3 为芯片组）
-    def get_chipset_tags(self):
-        j = self._get_json(API_PL_TAG)
+    def get_chipset_tags(self, host="com"):
+        """host="com" 走全球站，"cn" 走中国站（全球站被 Akamai 拦时的降级源）。"""
+        j = self._get_json(API_PL_TAG if host == "com" else CN_API_PL_TAG)
         out = []
         for grp in (j.get("result") or {}).get("filterTagList") or []:
             if grp.get("type") != 3:
@@ -1433,8 +1541,9 @@ class MsiApi:
         return out
 
     # ---------------- 型号列表（可按芯片组 tag id 过滤）
-    def get_product_list(self, tag_id=None):
-        url = API_PL_LIST + ("&id[]=%s" % tag_id if tag_id else "")
+    def get_product_list(self, tag_id=None, host="com"):
+        base = API_PL_LIST if host == "com" else CN_PL_LIST
+        url = base + ("&id[]=%s" % tag_id if tag_id else "")
         j = self._get_json(url)
         res = j.get("result") or {}
         items = []
@@ -1490,23 +1599,60 @@ class MsiApi:
 
 
 # ================================================================ 目录构建
+# 芯片组逐个拉取的间隔（秒）：全量目录 = 1 次分类 + 1 次总表 + 30 次芯片组过滤 ≈ 32 个
+# 请求。v2.5.5 是一次性连发，Akamai 的风控对「短时间同 IP 的 API 突发」比对单请求更敏感
+# （实测同一指纹空闲后再请求就恢复 200）。这里给每次过滤之间加 100~200ms 抖动，
+# 总代价约 4 秒，换来的是不触发突发限速。
+CHIP_PACE = (0.10, 0.20)
+
+
+def _is_block_err(e):
+    """异常是否属于「官网风控拒绝」（403/429/503），据此决定是否降级到中国站。"""
+    m = str(e)
+    return any(("HTTP %d" % c) in m for c in _BLOCK_CODES)
+
+
 def fetch_catalog(api, progress=None):
-    """从官网构建完整主板目录。
+    """从官网构建完整主板目录；全球站被拦时自动降级中国站。
+
     返回: {'updated': str, 'total': int,
            'brands': [{'name':'Intel','count':n,'chipsets':[
                         {'name':'Z890','boards':[{id,title,slug},...]}, ...]}, ...],
-           'uncovered': [board...]}
+           'uncovered': [board...], 'source': 'com'|'cn'}
     """
+    try:
+        cat = _fetch_catalog(api, progress, "com")
+        cat["source"] = "com"
+        return cat
+    except RuntimeError as e:
+        if not _is_block_err(e):
+            raise
+        # v2.5.6：全球站（Akamai）连指纹池都过不去时，改用中国站。
+        # msi.cn 是 Tengine + 独立接口，指纹名单与全球站不共享，实测稳定 200；
+        # 芯片组 tag id 与全球站不同，但分类/过滤/面板三条接口同构，可复用整条流程。
+        _log("全球站被拒（%s），降级中国站重建目录" % (e,))
+        if progress:
+            progress("全球站拒绝访问，改从中国站拉取…")
+        try:
+            cat = _fetch_catalog(api, progress, "cn")
+        except RuntimeError as e2:
+            raise RuntimeError("%s（中国站同样失败：%s）" % (e, e2))
+        cat["source"] = "cn"
+        return cat
+
+
+def _fetch_catalog(api, progress, host="com"):
+    site = "中国站" if host == "cn" else "官网"
     if progress:
-        progress("正在获取官网芯片组分类…")
-    chipsets = api.get_chipset_tags()
+        progress("正在获取%s芯片组分类…" % site)
+    chipsets = api.get_chipset_tags(host)
     if not chipsets:
-        raise RuntimeError("官网芯片组分类为空")
+        raise RuntimeError("%s芯片组分类为空" % site)
     if progress:
-        progress("正在拉取全量型号列表…")
-    full = api.get_product_list(None)
+        progress("正在拉取%s全量型号列表…" % site)
+    full = api.get_product_list(None, host)
     if not full:
-        raise RuntimeError("官网型号列表为空")
+        raise RuntimeError("%s型号列表为空" % site)
     full_clean = [it for it in full if not _is_junk_board(it)]
 
     # 按芯片组逐个过滤拉型号 -> 归属芯片组
@@ -1532,10 +1678,17 @@ def fetch_catalog(api, progress=None):
         if progress:
             progress("[%d/%d] %s" % (i + 1, n, title))
         try:
-            items = api.get_product_list(ct["id"])
+            items = api.get_product_list(ct["id"], host)
         except Exception as e:
+            if _is_block_err(e):
+                # 被风控掐断：绝不能"记 0 条接着跑"—— 那会产出缺芯片组的半截目录，
+                # 还被 save_catalog 落盘覆盖掉好的缓存。直接上抛，交给 fetch_catalog
+                # 决定降级（中国站）还是整体失败。
+                raise
             _log("chipset fetch err %s: %r" % (title, e))
             items = []
+        if i < n - 1:
+            time.sleep(random.uniform(*CHIP_PACE))
         brand = "Intel" if title.lower().startswith("intel ") else "AMD"
         chip = re.sub(r'^(Intel|AMD)\s+', '', title, flags=re.I).strip() or title
         seen = set()
@@ -1577,8 +1730,10 @@ def fetch_catalog(api, progress=None):
                                "chipsets": b["chipsets"]})
     cat = {"updated": time.strftime("%Y-%m-%d %H:%M"),
            "total": len(full_clean), "brands": out_brands, "uncovered": []}
-    # 中国站补全：把 msi.cn 在售但全球站 API 缺失的型号（大陆特供等）补录进来
-    merge_cn_products(cat)
+    # 中国站补全：把 msi.cn 在售但全球站 API 缺失的型号（大陆特供等）补录进来。
+    # host="cn" 时目录本身就来自中国站，无需再拉一遍。
+    if host == "com":
+        merge_cn_products(cat)
     return cat
 
 
@@ -2125,6 +2280,8 @@ class App:
         self._title_full = "请先在左侧选择主板型号"   # 标题完整文本（省略前的原文）
         self._pb_compact = False                   # 进度文案是否处于窄窗口短格式
         self._cat_busy = False          # 目录抓取是否在途（4 个入口共用，防重复抓取）
+        self._cat_failed = False        # 目录抓取是否已失败且无任何可用目录（v2.5.6）
+        self._cat_err = ""              # 最近一次目录失败原因（占位块 tooltip / 状态栏用）
         self._panel_cache = LRU(PANEL_CACHE_MAX)   # slug -> (ts, groups, note, host)
         self._panel_inflight = {}       # slug -> 在途标记（同型号请求合并）
         self._restored = False          # 上次查看的主板是否已恢复（只恢复一次）
@@ -2675,8 +2832,11 @@ class App:
         # 首次启动那 1~3 秒看起来像"界面没做完"）。place 覆盖在树区域中央，
         # 不占布局位，目录一填进来就 place_forget。
         self._cat_ph = tk.Label(twrap, text="正在读取主板目录…", font=FONT_S,
-                                bg=C_CARD, fg=C_DIM)
+                                bg=C_CARD, fg=C_DIM, justify="center")
         self._cat_ph.place(relx=0.5, rely=0.32, anchor="center")
+        # v2.5.6：目录抓取失败时这里变成「点此重试」（只有失败态可点，
+        # 其余「没有匹配的型号」等文案仍不可点，故在回调里判断状态而不是绑死）。
+        self._cat_ph.bind("<Button-1>", lambda e: self._on_cat_ph_click())
         # v2.2.0：记住手动展开的芯片组（重启后自动还原，常用芯片组不用每次重展）
         self.cat_tree.bind("<<TreeviewOpen>>", self._on_cat_open)
         self.cat_tree.bind("<<TreeviewClose>>", self._on_cat_open)
@@ -4161,7 +4321,12 @@ class App:
             self._set_status("目录正在刷新中，请稍候…", "run")
             return False
         self._cat_busy = True
+        self._cat_failed = False        # 重试时占位块回到「读取中」，别一直挂着上次的失败字样
         self.q.put(("busy", True))
+        if not self.catalog:
+            self.v_cat.set("目录加载中…")
+            self._cat_ph_set("正在读取主板目录…")
+            self._board_ph_set("目录就绪后\n这里会列出型号")
         threading.Thread(target=self._catalog_worker, daemon=True).start()
         return True
 
@@ -4184,13 +4349,31 @@ class App:
     def _apply_catalog(self, cat, err):
         self._cat_busy = False          # 抓取结束（成功或失败），放行下一次
         if cat is None:
-            self.v_cat.set("目录加载失败")
-            self._set_status("目录更新失败：%s\n仍可使用本地缓存的型号。" % (err or ""))
+            self._cat_err = (err or "").strip()
+            if self.catalog:
+                # 已有可用目录（缓存 / 上一次成功）→ 界面保持可用，只提示这次没刷新成。
+                # v2.5.6 修：旧版在这里无条件把栏 1 计数改成「目录加载失败」，
+                # 但列表里明明还列着 500 款型号 —— 读数与内容自相矛盾。
+                self._cat_failed = False
+                self._set_status("目录刷新失败：%s\n继续使用本地目录（%s 更新）"
+                                 % (self._cat_err, self.cat_updated or "缓存"), "warn")
+            else:
+                # 首次加载就失败：把「正在读取主板目录…」换成可点的失败态，
+                # 不能让它一直转（v2.5.5 截图里两栏都停在"读取中"，看起来像卡死）。
+                self._cat_failed = True
+                self.v_cat.set("目录加载失败")
+                self._populate_tree()
+                self._set_status("目录加载失败：%s\n点左栏「点此重试」，或检查网络后重开本工具。"
+                                 % self._cat_err, "warn")
             return
+        self._cat_failed = False
+        self._cat_err = ""
         self.catalog = cat
         self.cat_updated = cat.get("updated", "")
         self._populate_tree()
-        self._set_status("目录就绪：%d 款主板（%s 更新）" % (cat.get("total", 0), self.cat_updated))
+        src = "中国站" if cat.get("source") == "cn" else "官网"
+        self._set_status("目录就绪：%d 款主板（%s · %s 更新）"
+                         % (cat.get("total", 0), src, self.cat_updated))
 
     # ------------------------------------------------- UI 自适应（v2.2.0）
     def _tv_col_need(self):
@@ -5000,15 +5183,29 @@ class App:
     _auto_fit_cat = _auto_fit_cols
 
     def _cat_ph_set(self, text):
-        """栏 1 空列表占位（v2.5.5）：text 为空即隐藏。"""
+        """栏 1 空列表占位（v2.5.5）：text 为空即隐藏。
+
+        v2.5.6：失败态（文案含「重试」）换成手型光标 + 品牌红 —— 让"这里能点"
+        看得出来；其余占位（没有匹配的型号 / 正在读取）保持灰字静态。
+        """
         try:
             if text:
-                self._cat_ph.configure(text=text)
+                retry = self._cat_failed and "重试" in text
+                self._cat_ph.configure(text=text,
+                                       cursor="hand2" if retry else "",
+                                       fg=C_ACCENT if retry else C_DIM)
                 self._cat_ph.place(relx=0.5, rely=0.32, anchor="center")
             else:
                 self._cat_ph.place_forget()
         except Exception as e:
             _log("cat placeholder err: %r" % (e,))
+
+    def _on_cat_ph_click(self):
+        """点栏 1 的失败占位 -> 重新抓一次目录（只在失败态生效）。"""
+        if not self._cat_failed:
+            return
+        self._set_status("正在重试加载主板目录…", "run")
+        self._start_catalog()
 
     def _board_ph_set(self, text):
         """栏 2 空列表占位（v2.5.5）：text 为空即隐藏。"""
@@ -5040,9 +5237,16 @@ class App:
         self._search_hits = 0
         # v2.3.5 防护：目录尚未加载（None / 缺 brands）时清空树并提示，避免 .get 崩溃
         if not self.catalog or not self.catalog.get("brands"):
-            self.v_cat.set("目录加载中…")
-            self._cat_ph_set("正在读取主板目录…")
-            self._board_ph_set("目录就绪后\n这里会列出型号")
+            # v2.5.6：区分「正在读」与「读失败了」—— 失败后必须给出可点重试的出口，
+            # 否则两栏会永远停在"正在读取主板目录…"，用户只能关掉重开。
+            if self._cat_failed:
+                self.v_cat.set("目录加载失败")
+                self._cat_ph_set("目录加载失败\n点此重试")
+                self._board_ph_set("目录未加载\n暂时没有可选型号")
+            else:
+                self.v_cat.set("目录加载中…")
+                self._cat_ph_set("正在读取主板目录…")
+                self._board_ph_set("目录就绪后\n这里会列出型号")
             return
         n_vis = 0
         first_iid = None
