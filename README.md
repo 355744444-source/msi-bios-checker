@@ -7,6 +7,13 @@
 
 ![三栏主界面](预览图/预览_1_三栏_1500x820.png)
 
+## 下载
+
+最新版见 **[Releases](https://github.com/355744444-source/msi-bios-checker/releases/latest)**（当前 v2.5.6）：
+
+- `msi-bios-checker-v2.5.6.exe` — 单文件绿色版，双击即用，无需 Python
+- `msi-bios-checker-v2.5.6.zip` — exe + README + CHANGELOG + UI 设计规范
+
 ## 功能
 
 | 能力 | 说明 |
